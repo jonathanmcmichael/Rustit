@@ -1932,6 +1932,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustit-fixtures"
+version = "0.0.1"
+dependencies = [
+ "rustit-adapters",
+ "rustit-core",
+ "rustit-geometry",
+ "rustit-geometry-truck",
+ "rustit-ifc",
+ "rustit-model",
+ "rustit-schedule",
+ "serde",
+ "serde_json",
+ "uuid",
+]
+
+[[package]]
 name = "rustit-geometry"
 version = "0.0.1"
 dependencies = [
@@ -3353,6 +3369,10 @@ name = "xml-rs"
 version = "0.8.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+
+[[package]]
+name = "xtask"
+version = "0.0.1"
 
 [[package]]
 name = "xz2"

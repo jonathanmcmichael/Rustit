@@ -59,6 +59,14 @@ Defines import, export planning, and export application contracts. Adapters decl
 
 Creates a native window, builds a tiny in-memory project, asks `rustit-geometry-truck` to generate geometry from its semantic wall, and renders the resulting kernel-neutral mesh with `wgpu`. It is the composition root, never the owner of the semantic model or Truck topology.
 
+### `rustit-fixtures`
+
+Executes small synthetic Wall, Schedule, 4D, IFC, and Sync Labs against public domain contracts. It is test infrastructure, not a production dependency or an alternate project model. Expected values must be independently readable and must never be generated from the implementation under test without domain review.
+
+### `xtask`
+
+Provides contributor commands such as `cargo xtask verify` and `cargo xtask labs`. It orchestrates repository checks but contains no product behavior.
+
 ## Identity
 
 Domain IDs are strongly typed wrappers around a shared `IfcRootId`, backed by a UUID. They prevent accidental cross-domain substitution and remain losslessly convertible to IFC `GlobalId` values. Vendor identifiers are stored separately as external mappings.

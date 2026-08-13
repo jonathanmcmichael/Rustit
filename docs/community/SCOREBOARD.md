@@ -7,9 +7,10 @@ The scoreboard is a recurring maintainer snapshot of useful project evidence. Up
 | Evidence | Baseline |
 | --- | ---: |
 | Completed foundational pull requests | 4 |
-| Workspace tests | 28 |
+| Workspace tests and executable truth-lab cases | 36 after the truth-lab PR |
 | Rendered semantic object types | 1 (`Wall`) |
 | Kernel graduation gates fully demonstrated | 1 of 8 |
+| Synthetic truth labs | 5 |
 | Published starter work packets | 4 |
 | Active domain reviewers beyond bootstrap maintainer | 0 |
 

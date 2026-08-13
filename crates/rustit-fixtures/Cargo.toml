@@ -1,0 +1,22 @@
+[package]
+name = "rustit-fixtures"
+description = "Executable synthetic truth fixtures for Rustit contribution lanes"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+rustit-adapters = { path = "../rustit-adapters" }
+rustit-core = { path = "../rustit-core" }
+rustit-geometry = { path = "../rustit-geometry" }
+rustit-geometry-truck = { path = "../rustit-geometry-truck" }
+rustit-ifc = { path = "../rustit-ifc" }
+rustit-model = { path = "../rustit-model" }
+rustit-schedule = { path = "../rustit-schedule" }
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true

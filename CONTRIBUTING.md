@@ -46,7 +46,7 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace --all-targets
 ```
 
-When the repository's verification runner is available, use `cargo xtask verify` for the complete local gate. To see the current vertical slice, run `cargo run -p rustit-app`. It should open a native window containing an orange wall generated from the semantic demo project. A graphics adapter compatible with `wgpu` is required.
+Use `cargo xtask verify` for the complete local gate and `cargo xtask labs` to run only the synthetic domain contracts. To see the current vertical slice, run `cargo run -p rustit-app`. It should open a native window containing an orange wall generated from the semantic demo project. A graphics adapter compatible with `wgpu` is required.
 
 Add focused tests for new domain behavior. Code that only declares future architecture without supporting the current vertical slice usually belongs in an RFC rather than a crate.
 
