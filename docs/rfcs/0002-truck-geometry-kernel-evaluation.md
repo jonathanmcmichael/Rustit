@@ -24,9 +24,8 @@ The prototype intentionally tests a small AEC-shaped slice:
 2. Tessellate that solid into Rustit's kernel-neutral `Mesh`.
 3. Regenerate after changing a wall parameter and obtain deterministic results.
 4. Create a rectangular through-opening as an authored inner boundary.
-5. Cut the same class of opening with an experimental Boolean subtraction.
-6. Attempt a Boolean union of two perpendicular walls at an L corner.
-7. Export a directly modeled wall as generic STEP geometry.
+5. Evaluate experimental Boolean subtraction and wall union support.
+6. Export a directly modeled wall as generic STEP geometry.
 
 These checks are executable unit tests rather than screenshots or hand-edited samples.
 
@@ -38,11 +37,11 @@ These checks are executable unit tests rather than screenshots or hand-edited sa
 | Tessellation | Pass | Truck's meshing produces indexed triangles in Rustit's neutral mesh type. |
 | Parametric regeneration | Pass | Changing height changes the regenerated extent; repeated identical inputs produce equal meshes. |
 | Authored rectangular opening | Pass | An inner face boundary swept through the wall produces a closed solid. |
-| Boolean rectangular opening | Pass | Intersecting the wall with an inverted cutter produces a closed opened wall. |
-| Perpendicular L-wall Boolean union | Fail | `truck_shapeops::or` returns no result for the evaluated coplanar wall-junction case. |
+| Boolean rectangular opening | Deferred | Truck shape operations currently enable an unused VTK dependency chain with known vulnerable parsers. |
+| Perpendicular L-wall Boolean union | Deferred | Boolean operations will return behind a reviewed dependency boundary. |
 | Direct modeled-solid STEP output | Pass | `truck-stepio` emits a `MANIFOLD_SOLID_BREP` STEP document. |
 
-The failed join is a material finding. Wall joins contain coincident and coplanar faces that are common in BIM and difficult for Boolean engines. Rustit must not disguise that limitation behind a passing box test. The v0.0.2 wall slice can proceed without destructive joins, but robust join behavior is a gate for broader authoring use.
+The earlier experiment also found that Truck's Boolean union returned no result for the evaluated coplanar wall-junction case. That remains a material finding: wall joins contain coincident and coplanar faces that are common in BIM and difficult for Boolean engines. Rustit must not disguise that limitation behind a passing box test. The v0.0.2 wall slice can proceed without destructive joins, but secure dependency closure and robust join behavior are gates for broader authoring use.
 
 ## Decision
 
@@ -52,7 +51,7 @@ This means:
 
 - v0.0.2 may use Truck for straight-wall solid generation and rendering tessellation;
 - authored topology is preferred when the operation is naturally parametric, such as a rectangular wall opening;
-- raw Boolean operations are experimental and must return explicit errors;
+- Truck shape operations stay outside the default build until their dependency path passes the repository security gate;
 - the semantic model must never store Truck handles as canonical wall identity or meaning; and
 - Rustit may add another kernel implementation or replace Truck without migrating the project model.
 
@@ -71,9 +70,9 @@ The current `truck-stepio` documentation also states that shapes created by set 
 
 ## Dependency and maintenance risks
 
-The evaluated versions are `truck-modeling 0.6.0`, `truck-meshalgo 0.4.0`, `truck-shapeops 0.4.0`, and `truck-stepio 0.3.0`.
+The retained versions are `truck-modeling 0.6.0`, `truck-meshalgo 0.4.0`, and `truck-stepio 0.3.0`.
 
-Current Rust accepts the graph, but reports future-incompatibility warnings for `nom 3.2.1` and `quick-xml 0.22.0`. Both arrive through `vtkio 0.6.3`, which is included by `truck-meshalgo`. This must be resolved upstream, patched, or isolated before Rustit treats the kernel stack as production-ready.
+Rustit disables `truck-meshalgo`'s default features because the project needs tessellation but does not yet expose VTK import or export. Truck's shape-operations crate currently re-enables that VTK chain, including vulnerable legacy XML and compression parsers, so it has been removed from the default dependency graph rather than allowlisted. The remaining graph reports a future-incompatibility warning for `nom 3.2.1` through STEP support; that must be resolved upstream, patched, or isolated before Rustit treats the kernel stack as production-ready.
 
 Other risks include:
 

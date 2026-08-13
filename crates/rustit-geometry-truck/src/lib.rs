@@ -70,21 +70,6 @@ impl TruckGeometryKernel {
         Ok(builder::tsweep(&elevation, across))
     }
 
-    /// Joins two solids using Truck's experimental shape operations.
-    pub fn union(&self, first: &Solid, second: &Solid) -> Result<Solid, TruckGeometryError> {
-        truck_shapeops::or(first, second, self.tessellation_tolerance)
-            .ok_or(TruckGeometryError::BooleanFailed)
-    }
-
-    /// Subtracts `tool` from `whole` using Truck's inverted-solid intersection
-    /// convention.
-    pub fn subtract(&self, whole: &Solid, tool: &Solid) -> Result<Solid, TruckGeometryError> {
-        let mut inverted_tool = tool.clone();
-        inverted_tool.not();
-        truck_shapeops::and(whole, &inverted_tool, self.tessellation_tolerance)
-            .ok_or(TruckGeometryError::BooleanFailed)
-    }
-
     /// Exports a modeled solid as a STEP exchange document.
     ///
     /// Truck currently cannot export solids produced by shape operations, so
@@ -194,14 +179,13 @@ pub enum TruckGeometryError {
     NonHorizontalBaseline,
     #[error("tessellation tolerance must be finite and greater than Truck's tolerance")]
     InvalidTessellationTolerance,
-    #[error("Truck could not complete the solid Boolean operation")]
-    BooleanFailed,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use rustit_geometry::{Segment3, WallGeometry};
+    use truck_modeling::ShellCondition;
 
     fn wall(length: f64, thickness: f64, height: f64) -> WallGeometry {
         WallGeometry {
@@ -276,47 +260,6 @@ mod tests {
         assert!(mesh.vertices.iter().any(|vertex| {
             (vertex.x - 2.0).abs() < TOLERANCE && (vertex.z - 0.8).abs() < TOLERANCE
         }));
-    }
-
-    #[test]
-    fn cuts_a_rectangular_opening_with_a_boolean() {
-        let kernel = TruckGeometryKernel::default();
-        let solid = kernel.wall_solid(wall(5.0, 0.2, 3.0)).expect("wall");
-        let cutter = WallGeometry {
-            baseline: Segment3::new(
-                RustitPoint3::new(2.0, 2.0, 0.8),
-                RustitPoint3::new(3.2, 2.0, 0.8),
-            ),
-            thickness: 0.4,
-            height: 1.6,
-        };
-        let cutter = kernel.wall_solid(cutter).expect("opening cutter");
-        let opened = kernel.subtract(&solid, &cutter).expect("boolean opening");
-
-        assert_eq!(
-            opened.boundaries()[0].shell_condition(),
-            ShellCondition::Closed
-        );
-        assert!(kernel.tessellate(&opened).triangles.len() > 12);
-    }
-
-    #[test]
-    fn reports_the_current_l_wall_join_limitation() {
-        let kernel = TruckGeometryKernel::default();
-        let first = kernel.wall_solid(wall(4.0, 0.2, 3.0)).expect("first wall");
-        let second_wall = WallGeometry {
-            baseline: Segment3::new(
-                RustitPoint3::new(1.0, 2.0, 0.0),
-                RustitPoint3::new(1.0, 6.0, 0.0),
-            ),
-            thickness: 0.2,
-            height: 3.0,
-        };
-        let second = kernel.wall_solid(second_wall).expect("second wall");
-        assert!(matches!(
-            kernel.union(&first, &second),
-            Err(TruckGeometryError::BooleanFailed)
-        ));
     }
 
     #[test]
