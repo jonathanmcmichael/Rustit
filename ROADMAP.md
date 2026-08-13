@@ -20,6 +20,7 @@ Exit condition: a contributor can clone the repository, run the app, and see a w
 
 ## v0.0.2 — We Have Walls
 
+- [x] Evaluate Truck behind the kernel-neutral geometry contract
 - Create and edit a level and straight wall through the app
 - Generate wall geometry through a kernel implementation
 - Render a ground plane and wall mesh

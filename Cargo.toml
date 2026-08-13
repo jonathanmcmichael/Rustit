@@ -4,6 +4,7 @@ members = [
     "crates/rustit-app",
     "crates/rustit-core",
     "crates/rustit-geometry",
+    "crates/rustit-geometry-truck",
     "crates/rustit-ifc",
     "crates/rustit-model",
     "crates/rustit-postgres",
