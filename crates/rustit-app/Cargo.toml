@@ -1,0 +1,16 @@
+[package]
+name = "rustit-app"
+description = "Minimal Rustit desktop shell"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustit-core = { path = "../rustit-core" }
+rustit-geometry = { path = "../rustit-geometry" }
+rustit-model = { path = "../rustit-model" }
+rustit-schedule = { path = "../rustit-schedule" }
+winit.workspace = true

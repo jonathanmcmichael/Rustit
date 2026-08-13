@@ -1,0 +1,19 @@
+[package]
+name = "rustit-core"
+description = "Unified Rustit project model connecting BIM authoring and scheduling"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustit-model = { path = "../rustit-model" }
+rustit-schedule = { path = "../rustit-schedule" }
+serde.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+rustit-geometry = { path = "../rustit-geometry" }

@@ -1,0 +1,27 @@
+[workspace]
+members = [
+    "crates/rustit-adapters",
+    "crates/rustit-app",
+    "crates/rustit-core",
+    "crates/rustit-geometry",
+    "crates/rustit-model",
+    "crates/rustit-postgres",
+    "crates/rustit-schedule",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.0.1"
+edition = "2024"
+rust-version = "1.85"
+authors = ["Jonathan McMichael and Rustit contributors"]
+license = "MPL-2.0"
+repository = "https://github.com/jonathanmcmichael/Rustit"
+homepage = "https://github.com/jonathanmcmichael/Rustit"
+
+[workspace.dependencies]
+chrono = { version = "0.4.42", default-features = false, features = ["clock", "serde"] }
+serde = { version = "1.0.228", features = ["derive"] }
+thiserror = "2.0.17"
+uuid = { version = "1.18.1", features = ["serde", "v4"] }
+winit = "0.30.12"
