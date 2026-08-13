@@ -1,6 +1,7 @@
 //! Semantic BIM authoring types.
 
 use rustit_geometry::{Segment3, WallGeometry};
+use rustit_ifc::{ClassificationReference, IfcEntity, IfcRootId};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
@@ -9,22 +10,22 @@ macro_rules! stable_id {
     ($name:ident) => {
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
         #[serde(transparent)]
-        pub struct $name(Uuid);
+        pub struct $name(IfcRootId);
 
         impl $name {
             #[must_use]
             pub fn new() -> Self {
-                Self(Uuid::new_v4())
+                Self(IfcRootId::new())
             }
 
             #[must_use]
             pub const fn from_uuid(value: Uuid) -> Self {
-                Self(value)
+                Self(IfcRootId::from_uuid(value))
             }
 
             #[must_use]
             pub const fn as_uuid(self) -> Uuid {
-                self.0
+                self.0.as_uuid()
             }
         }
 
@@ -62,6 +63,11 @@ impl Level {
             elevation,
         }
     }
+
+    #[must_use]
+    pub const fn ifc_entity(&self) -> IfcEntity {
+        IfcEntity::BuildingStorey
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -73,6 +79,8 @@ pub struct Wall {
     pub thickness: f64,
     /// Unconnected wall height in metres.
     pub height: f64,
+    /// IFC classification associations such as MasterFormat or UniFormat.
+    pub classifications: Vec<ClassificationReference>,
 }
 
 impl Wall {
@@ -95,7 +103,19 @@ impl Wall {
             baseline,
             thickness,
             height,
+            classifications: Vec::new(),
         })
+    }
+
+    #[must_use]
+    pub const fn ifc_entity(&self) -> IfcEntity {
+        IfcEntity::Wall
+    }
+
+    pub fn add_classification(&mut self, reference: ClassificationReference) {
+        if !self.classifications.contains(&reference) {
+            self.classifications.push(reference);
+        }
     }
 
     #[must_use]
@@ -156,6 +176,7 @@ pub enum ModelError {
 mod tests {
     use super::*;
     use rustit_geometry::Point3;
+    use rustit_ifc::ClassificationSystem;
 
     #[test]
     fn wall_requires_an_existing_level() {
@@ -182,5 +203,37 @@ mod tests {
         let restored: Level = serde_json::from_str(&json).expect("deserialize level");
 
         assert_eq!(restored.id, level.id);
+    }
+
+    #[test]
+    fn wall_is_ifc_based_and_accepts_multiple_classification_systems() {
+        let level = Level::new("Level 1", 0.0);
+        let mut wall = Wall::new(
+            level.id,
+            Segment3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(5.0, 0.0, 0.0)),
+            0.2,
+            3.0,
+        )
+        .expect("valid wall");
+
+        wall.add_classification(
+            ClassificationReference::master_format("project edition", "07", "Envelope work")
+                .expect("valid MasterFormat reference"),
+        );
+        wall.add_classification(
+            ClassificationReference::uni_format("project edition", "B2010", "Exterior Walls")
+                .expect("valid UniFormat reference"),
+        );
+
+        assert_eq!(wall.ifc_entity(), IfcEntity::Wall);
+        assert_eq!(wall.classifications.len(), 2);
+        assert_eq!(
+            wall.classifications[0].system,
+            ClassificationSystem::MasterFormat
+        );
+        assert_eq!(
+            wall.classifications[1].system,
+            ClassificationSystem::UniFormat
+        );
     }
 }

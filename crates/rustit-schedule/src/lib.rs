@@ -1,5 +1,6 @@
 //! Open schedule types and a deterministic critical path method engine.
 
+use rustit_ifc::{ClassificationReference, IfcEntity, IfcRootId};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use thiserror::Error;
@@ -9,22 +10,22 @@ macro_rules! stable_id {
     ($name:ident) => {
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
         #[serde(transparent)]
-        pub struct $name(Uuid);
+        pub struct $name(IfcRootId);
 
         impl $name {
             #[must_use]
             pub fn new() -> Self {
-                Self(Uuid::new_v4())
+                Self(IfcRootId::new())
             }
 
             #[must_use]
             pub const fn from_uuid(value: Uuid) -> Self {
-                Self(value)
+                Self(IfcRootId::from_uuid(value))
             }
 
             #[must_use]
             pub const fn as_uuid(self) -> Uuid {
-                self.0
+                self.0.as_uuid()
             }
         }
 
@@ -60,6 +61,7 @@ pub struct Activity {
     /// Planned working duration in hours. Zero represents a milestone.
     pub duration_hours: u32,
     pub status: ActivityStatus,
+    pub classifications: Vec<ClassificationReference>,
 }
 
 impl Activity {
@@ -70,6 +72,18 @@ impl Activity {
             name: name.into(),
             duration_hours,
             status: ActivityStatus::NotStarted,
+            classifications: Vec::new(),
+        }
+    }
+
+    #[must_use]
+    pub const fn ifc_entity(&self) -> IfcEntity {
+        IfcEntity::Task
+    }
+
+    pub fn add_classification(&mut self, reference: ClassificationReference) {
+        if !self.classifications.contains(&reference) {
+            self.classifications.push(reference);
         }
     }
 }
@@ -107,6 +121,11 @@ impl ActivityRelationship {
             relationship_type,
             lag_hours,
         }
+    }
+
+    #[must_use]
+    pub const fn ifc_entity(&self) -> IfcEntity {
+        IfcEntity::RelSequence
     }
 }
 

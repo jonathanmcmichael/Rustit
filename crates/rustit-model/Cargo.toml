@@ -10,6 +10,7 @@ repository.workspace = true
 
 [dependencies]
 rustit-geometry = { path = "../rustit-geometry" }
+rustit-ifc = { path = "../rustit-ifc" }
 serde.workspace = true
 thiserror.workspace = true
 uuid.workspace = true

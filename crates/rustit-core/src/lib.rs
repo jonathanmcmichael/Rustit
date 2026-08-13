@@ -3,6 +3,7 @@
 //! BIM authoring and scheduling meet here. Neither domain is owned by a GUI,
 //! database, vendor adapter, or AI client.
 
+use rustit_ifc::{IfcEntity, IfcRootId, IfcSchemaVersion};
 use rustit_model::{BimModel, ElementId};
 use rustit_schedule::{ActivityId, Schedule};
 use serde::{Deserialize, Serialize};
@@ -13,22 +14,22 @@ macro_rules! stable_id {
     ($name:ident) => {
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
         #[serde(transparent)]
-        pub struct $name(Uuid);
+        pub struct $name(IfcRootId);
 
         impl $name {
             #[must_use]
             pub fn new() -> Self {
-                Self(Uuid::new_v4())
+                Self(IfcRootId::new())
             }
 
             #[must_use]
             pub const fn from_uuid(value: Uuid) -> Self {
-                Self(value)
+                Self(IfcRootId::from_uuid(value))
             }
 
             #[must_use]
             pub const fn as_uuid(self) -> Uuid {
-                self.0
+                self.0.as_uuid()
             }
         }
 
@@ -76,12 +77,18 @@ impl ElementActivityLink {
             role,
         }
     }
+
+    #[must_use]
+    pub const fn ifc_entity(&self) -> IfcEntity {
+        IfcEntity::RelAssignsToProcess
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Project {
     pub id: ProjectId,
     pub name: String,
+    pub ifc_schema: IfcSchemaVersion,
     pub model: BimModel,
     pub schedule: Schedule,
     pub element_activity_links: Vec<ElementActivityLink>,
@@ -93,10 +100,16 @@ impl Project {
         Self {
             id: ProjectId::new(),
             name: name.into(),
+            ifc_schema: IfcSchemaVersion::default(),
             model: BimModel::default(),
             schedule: Schedule::default(),
             element_activity_links: Vec::new(),
         }
+    }
+
+    #[must_use]
+    pub const fn ifc_entity(&self) -> IfcEntity {
+        IfcEntity::Project
     }
 
     pub fn link_element_activity(&mut self, link: ElementActivityLink) -> Result<(), ProjectError> {
@@ -160,5 +173,7 @@ mod tests {
             .expect("link element and activity");
 
         assert_eq!(project.element_activity_links, vec![link]);
+        assert_eq!(project.ifc_schema, IfcSchemaVersion::Ifc4x3Add2);
+        assert_eq!(project.ifc_entity(), IfcEntity::Project);
     }
 }

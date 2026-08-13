@@ -9,6 +9,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+rustit-ifc = { path = "../rustit-ifc" }
 serde.workspace = true
 thiserror.workspace = true
 uuid.workspace = true

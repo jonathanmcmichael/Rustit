@@ -964,6 +964,7 @@ dependencies = [
 name = "rustit-adapters"
 version = "0.0.1"
 dependencies = [
+ "rustit-ifc",
  "rustit-model",
  "rustit-schedule",
  "serde",
@@ -977,8 +978,10 @@ version = "0.0.1"
 dependencies = [
  "rustit-core",
  "rustit-geometry",
+ "rustit-ifc",
  "rustit-model",
  "rustit-schedule",
+ "uuid",
  "winit",
 ]
 
@@ -987,6 +990,7 @@ name = "rustit-core"
 version = "0.0.1"
 dependencies = [
  "rustit-geometry",
+ "rustit-ifc",
  "rustit-model",
  "rustit-schedule",
  "serde",
@@ -1003,10 +1007,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustit-ifc"
+version = "0.0.1"
+dependencies = [
+ "serde",
+ "thiserror 2.0.20",
+ "uuid",
+]
+
+[[package]]
 name = "rustit-model"
 version = "0.0.1"
 dependencies = [
  "rustit-geometry",
+ "rustit-ifc",
  "serde",
  "serde_json",
  "thiserror 2.0.20",
@@ -1025,6 +1039,7 @@ dependencies = [
 name = "rustit-schedule"
 version = "0.0.1"
 dependencies = [
+ "rustit-ifc",
  "serde",
  "serde_json",
  "thiserror 2.0.20",

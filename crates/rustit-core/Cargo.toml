@@ -9,6 +9,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+rustit-ifc = { path = "../rustit-ifc" }
 rustit-model = { path = "../rustit-model" }
 rustit-schedule = { path = "../rustit-schedule" }
 serde.workspace = true

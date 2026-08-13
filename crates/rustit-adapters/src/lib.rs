@@ -1,5 +1,6 @@
 //! Vendor-neutral boundaries for schedule and model interoperability.
 
+use rustit_ifc::IfcSchemaVersion;
 use rustit_model::BimModel;
 use rustit_schedule::Schedule;
 use serde::{Deserialize, Serialize};
@@ -14,7 +15,7 @@ pub enum ExternalSystem {
     PrimaveraP6,
     OraclePrimaveraCloud,
     BentleySynchro,
-    Ifc,
+    Ifc(IfcSchemaVersion),
     Other(String),
 }
 

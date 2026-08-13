@@ -1,6 +1,6 @@
 [package]
-name = "rustit-adapters"
-description = "Vendor-neutral adapter contracts for IFC and schedule systems"
+name = "rustit-ifc"
+description = "IFC-aligned identity, entity, and classification foundations for Rustit"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -9,9 +9,6 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-rustit-ifc = { path = "../rustit-ifc" }
-rustit-model = { path = "../rustit-model" }
-rustit-schedule = { path = "../rustit-schedule" }
 serde.workspace = true
 thiserror.workspace = true
 uuid.workspace = true

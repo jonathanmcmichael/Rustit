@@ -6,6 +6,8 @@ The roadmap favors complete vertical slices over broad collections of placeholde
 
 - [x] Native desktop window
 - [x] Stable typed UUIDs
+- [x] IFC 4.3.2.0 semantic baseline
+- [x] MasterFormat and UniFormat classification references
 - [x] Semantic `Level` and `Wall`
 - [x] `Activity` and `ActivityRelationship`
 - [x] Vendor-independent `ElementActivityLink`
@@ -42,7 +44,7 @@ Exit condition: a contributor can clone the repository, run the app, and see a w
 
 ## v0.0.5 — It Interoperates
 
-- Implement a first IFC vertical slice
+- Serialize the first IFC 4.3 authoring vertical slice without losing stable identity
 - Prototype one read-only schedule adapter
 - Compare imported data before committing it
 - Export through capability-aware, reviewable sync plans

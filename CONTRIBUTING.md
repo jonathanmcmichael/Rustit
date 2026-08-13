@@ -9,7 +9,8 @@ The project is experimental. Small, tested vertical slices are more valuable tha
 1. Read [VISION.md](VISION.md), [ARCHITECTURE.md](ARCHITECTURE.md), and the accepted RFCs.
 2. Open an issue or discussion before substantial architectural work.
 3. Keep vendor-specific concepts behind adapter boundaries.
-4. Do not introduce a geometry kernel, database driver, UI framework expansion, or vendor SDK without documenting the tradeoff.
+4. Preserve the IFC 4.3 semantic mapping and edition/source information on classification references.
+5. Do not introduce a geometry kernel, database driver, UI framework expansion, or vendor SDK without documenting the tradeoff.
 
 ## Local development
 
@@ -31,6 +32,7 @@ Add focused tests for new domain behavior. Code that only declares future archit
 - Call out new dependencies and external-system assumptions.
 - Update an RFC or architecture document when a boundary changes.
 - Never commit database URLs, API keys, model files, or customer/project data.
+- Do not commit proprietary MasterFormat or UniFormat tables; use small references in tests and obtain catalogs through appropriately licensed sources.
 
 ## RFC process
 
