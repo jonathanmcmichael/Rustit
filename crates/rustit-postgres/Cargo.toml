@@ -1,0 +1,13 @@
+[package]
+name = "rustit-postgres"
+description = "PostgreSQL persistence ports for the open Rustit project model"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustit-core = { path = "../rustit-core" }
+thiserror.workspace = true
