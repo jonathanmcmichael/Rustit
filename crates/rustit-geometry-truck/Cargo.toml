@@ -1,0 +1,17 @@
+[package]
+name = "rustit-geometry-truck"
+description = "Truck CAD-kernel implementation of Rustit's geometry contracts"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustit-geometry = { path = "../rustit-geometry" }
+thiserror.workspace = true
+truck-meshalgo = "0.4.0"
+truck-modeling = "0.6.0"
+truck-shapeops = { version = "0.4.0", default-features = false }
+truck-stepio = "0.3.0"

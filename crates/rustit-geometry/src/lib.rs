@@ -63,6 +63,38 @@ pub struct WallGeometry {
     pub height: f64,
 }
 
+/// A rectangular through-opening located in a straight wall.
+///
+/// `offset` is measured from the wall baseline start to the opening's near
+/// jamb. `sill_height` is measured from the wall baseline elevation.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct RectangularOpeningGeometry {
+    pub offset: f64,
+    pub sill_height: f64,
+    pub width: f64,
+    pub height: f64,
+}
+
+impl RectangularOpeningGeometry {
+    pub fn validate_for(self, wall: WallGeometry) -> Result<Self, GeometryError> {
+        let wall = wall.validate()?;
+        if self.width <= 0.0 {
+            return Err(GeometryError::NonPositiveOpeningWidth);
+        }
+        if self.height <= 0.0 {
+            return Err(GeometryError::NonPositiveOpeningHeight);
+        }
+        if self.offset < 0.0
+            || self.sill_height < 0.0
+            || self.offset + self.width > wall.baseline.length()
+            || self.sill_height + self.height > wall.height
+        {
+            return Err(GeometryError::OpeningOutsideWall);
+        }
+        Ok(self)
+    }
+}
+
 impl WallGeometry {
     pub fn validate(self) -> Result<Self, GeometryError> {
         if self.baseline.length() <= f64::EPSILON {
@@ -93,6 +125,12 @@ pub enum GeometryError {
     NonPositiveThickness,
     #[error("wall height must be positive")]
     NonPositiveHeight,
+    #[error("opening width must be positive")]
+    NonPositiveOpeningWidth,
+    #[error("opening height must be positive")]
+    NonPositiveOpeningHeight,
+    #[error("opening must fit within the wall elevation and baseline extents")]
+    OpeningOutsideWall,
 }
 
 #[cfg(test)]
@@ -120,5 +158,30 @@ mod tests {
         };
 
         assert_eq!(geometry.validate(), Err(GeometryError::DegenerateBaseline));
+    }
+
+    #[test]
+    fn validates_an_opening_against_its_wall() {
+        let wall = WallGeometry {
+            baseline: Segment3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(5.0, 0.0, 0.0)),
+            thickness: 0.2,
+            height: 3.0,
+        };
+        let opening = RectangularOpeningGeometry {
+            offset: 1.0,
+            sill_height: 0.9,
+            width: 1.2,
+            height: 1.5,
+        };
+
+        assert!(opening.validate_for(wall).is_ok());
+        assert_eq!(
+            RectangularOpeningGeometry {
+                offset: 4.0,
+                ..opening
+            }
+            .validate_for(wall),
+            Err(GeometryError::OpeningOutsideWall)
+        );
     }
 }

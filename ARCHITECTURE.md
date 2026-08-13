@@ -12,6 +12,8 @@ Rustit is a modular Rust workspace organized around an open project model. The d
                  |  ----- rustit-ifc ----  |
                  |                       |
          rustit-geometry          CPM calculation
+                |
+     rustit-geometry-truck
 
      rustit-postgres              rustit-adapters
              \                         /
@@ -28,6 +30,10 @@ Defines the IFC 4.3.2.0 schema target, IFC-rooted 128-bit identity, the entity f
 ### `rustit-geometry`
 
 Defines project-coordinate primitives, wall geometry inputs, mesh output, and the `GeometryKernel` trait. It does not know what a BIM `Wall` is. Truck, Open CASCADE, or another provider can implement the contract after an evaluation RFC.
+
+### `rustit-geometry-truck`
+
+Implements the kernel-neutral geometry contract with the pure-Rust Truck crates. The evaluation prototype produces closed B-rep walls, deterministic render meshes, rectangular openings, experimental Booleans, and generic STEP geometry. It is a replaceable implementation—not the semantic BIM model, an IFC serializer, or a permanent exclusive-kernel decision. [RFC 0002](docs/rfcs/0002-truck-geometry-kernel-evaluation.md) records the evidence and open risks.
 
 ### `rustit-model`
 
@@ -73,4 +79,4 @@ New objects currently receive random UUID v4 values. Import adapters must resolv
 
 ## Not yet implemented
 
-Rendering, geometry generation, database schemas, live synchronization, IFC serialization, full classification catalogs, calendars, authentication, transactions, and AI interfaces are roadmap work. The interfaces in this scaffold reserve clean seams; they are not claims of working integrations.
+App-integrated rendering and geometry regeneration, database schemas, live synchronization, IFC serialization, full classification catalogs, calendars, authentication, transactions, and AI interfaces are roadmap work. The interfaces in this scaffold reserve clean seams; the Truck crate is an evaluation implementation rather than a claim of production CAD coverage.

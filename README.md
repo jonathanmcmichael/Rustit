@@ -46,6 +46,7 @@ cargo test --workspace --all-targets
 | Crate | Responsibility |
 | --- | --- |
 | `rustit-geometry` | Kernel-neutral geometry primitives and contracts |
+| `rustit-geometry-truck` | Experimental Truck B-rep, tessellation, Boolean, and STEP implementation |
 | `rustit-ifc` | IFC schema target, rooted identity, entities, and classifications |
 | `rustit-model` | Semantic BIM authoring model (`Level`, `Wall`) |
 | `rustit-schedule` | Activities, relationships, and deterministic CPM |
@@ -74,6 +75,7 @@ An external system may call the same activity `A1040`, `781992`, or something el
 - [Architecture](ARCHITECTURE.md)
 - [Roadmap](ROADMAP.md)
 - [RFC 0001: The Rustit Project Model](docs/rfcs/0001-project-model.md)
+- [RFC 0002: Truck Geometry Kernel Evaluation](docs/rfcs/0002-truck-geometry-kernel-evaluation.md)
 - [Contributing](CONTRIBUTING.md)
 
 Started as a joke. Built as a serious open-source experiment.
