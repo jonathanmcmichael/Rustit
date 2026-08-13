@@ -23,6 +23,9 @@ states:
   - state:needs-domain
   - state:proposed
   - state:ready
+  - state:in-progress
+  - state:in-review
+  - state:done
   - state:blocked
 reviews:
   - review:bim
@@ -33,3 +36,4 @@ reviews:
   - review:security
 coordination:
   - ai-ready
+  - challenge
