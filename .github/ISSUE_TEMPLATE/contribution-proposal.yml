@@ -1,0 +1,45 @@
+name: Contribution proposal
+description: Propose a bounded improvement or volunteer a domain test case
+title: "proposal: "
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Desktop app and rendering
+        - BIM project model
+        - Geometry and Truck kernel
+        - Scheduling and CPM
+        - IFC and classification
+        - Persistence
+        - Vendor adapters
+        - Documentation and contributor experience
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the user, contributor, or interoperability problem before proposing code.
+    validations:
+      required: true
+  - type: textarea
+    id: slice
+    attributes:
+      label: Smallest useful slice
+      description: What narrow result could be implemented and reviewed independently?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance check
+      description: How can a reviewer objectively verify the result?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Domain context
+      description: Standards, anonymized examples, edge cases, or practical experience that should inform the work.

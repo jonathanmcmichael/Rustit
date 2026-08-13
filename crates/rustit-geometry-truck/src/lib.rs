@@ -103,9 +103,10 @@ impl TruckGeometryKernel {
     }
 
     fn tessellate(&self, solid: &Solid) -> Mesh {
-        let polygon = solid
+        let mut polygon = solid
             .triangulation(self.tessellation_tolerance)
             .to_polygon();
+        polygon.triangulate();
         let vertices = polygon
             .positions()
             .iter()
@@ -224,7 +225,7 @@ mod tests {
             ShellCondition::Closed
         );
         assert!(!mesh.vertices.is_empty());
-        assert!(!mesh.triangles.is_empty());
+        assert_eq!(mesh.triangles.len(), 12);
         assert!(
             mesh.triangles
                 .iter()

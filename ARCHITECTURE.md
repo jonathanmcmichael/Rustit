@@ -57,7 +57,7 @@ Defines import, export planning, and export application contracts. Adapters decl
 
 ### `rustit-app`
 
-Creates a native window and builds a tiny in-memory project. It is the composition root, never the owner of the semantic model.
+Creates a native window, builds a tiny in-memory project, asks `rustit-geometry-truck` to generate geometry from its semantic wall, and renders the resulting kernel-neutral mesh with `wgpu`. It is the composition root, never the owner of the semantic model or Truck topology.
 
 ## Identity
 
@@ -79,4 +79,4 @@ New objects currently receive random UUID v4 values. Import adapters must resolv
 
 ## Not yet implemented
 
-App-integrated rendering and geometry regeneration, database schemas, live synchronization, IFC serialization, full classification catalogs, calendars, authentication, transactions, and AI interfaces are roadmap work. The interfaces in this scaffold reserve clean seams; the Truck crate is an evaluation implementation rather than a claim of production CAD coverage.
+Interactive editing and selection, camera controls, database schemas, live synchronization, IFC serialization, full classification catalogs, calendars, authentication, transactions, and AI interfaces are roadmap work. The first rendered wall proves the semantic-to-kernel-to-neutral-mesh path; it is not a claim of production CAD coverage.

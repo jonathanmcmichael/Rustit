@@ -22,8 +22,8 @@ Exit condition: a contributor can clone the repository, run the app, and see a w
 
 - [x] Evaluate Truck behind the kernel-neutral geometry contract
 - Create and edit a level and straight wall through the app
-- Generate wall geometry through a kernel implementation
-- Render a ground plane and wall mesh
+- [x] Generate wall geometry through a kernel implementation
+- [x] Render a ground plane and wall mesh
 - Orbit, pan, zoom, select, and inspect
 - Keep the semantic wall as the source of rendered geometry
 

@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Architectural change
+    url: https://github.com/jonathanmcmichael/Rustit/blob/main/CONTRIBUTING.md#rfc-process
+    about: Read the RFC guidance before proposing a cross-cutting architectural change.

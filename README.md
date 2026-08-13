@@ -23,11 +23,11 @@ The current scaffold proves a narrow foundation:
 - PostgreSQL and vendor integration are expressed as interfaces, not embedded assumptions; and
 - all domain objects use strongly typed UUID identities that survive serialization.
 
-The window does not render the wall yet. That end-to-end semantic-to-geometry-to-rendering slice is the next milestone.
+Development has begun on v0.0.2. The desktop app now takes its semantic `Wall`, asks the replaceable Truck kernel for a neutral triangle mesh, and renders that mesh with `wgpu` over a ground plane. The first wall is no longer a hardcoded cube. Authoring controls, selection, and camera navigation remain next.
 
 ## Try it
 
-Install a current stable Rust toolchain, then run:
+Install a current stable Rust toolchain on a machine with a WebGPU-compatible graphics adapter, then run:
 
 ```sh
 cargo run -p rustit-app
@@ -53,7 +53,7 @@ cargo test --workspace --all-targets
 | `rustit-core` | Unified project and vendor-independent 4D links |
 | `rustit-postgres` | PostgreSQL persistence interfaces and optimistic-version contract |
 | `rustit-adapters` | IFC, P6, OPC, SYNCHRO, and future adapter boundaries |
-| `rustit-app` | Minimal native desktop shell |
+| `rustit-app` | Native desktop shell and neutral-mesh GPU renderer |
 
 The dependency direction is deliberate: domain crates know nothing about the windowing toolkit, PostgreSQL driver, or vendor APIs.
 
