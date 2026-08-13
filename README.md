@@ -78,4 +78,4 @@ An external system may call the same activity `A1040`, `781992`, or something el
 
 Started as a joke. Built as a serious open-source experiment.
 
-The app assigns each new project one harmless development codename: **Space King**, **Aqua Teen Hunger Force**, or **Sassy the Sasquatch**. These are affectionate cultural Easter eggs, not project dependencies or endorsements.
+The app assigns each new project one harmless development codename drawn from **Space King**, **Aqua Teen Hunger Force**, or **The Big Lez Show** territory—including **Sassy the Sasquatch**, **Big Lez**, **Mike Nolan**, **Clarence**, and **Donny**. These are affectionate cultural Easter eggs, not project dependencies or endorsements.
