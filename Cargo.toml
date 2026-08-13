@@ -22,7 +22,10 @@ repository = "https://github.com/jonathanmcmichael/Rustit"
 homepage = "https://github.com/jonathanmcmichael/Rustit"
 
 [workspace.dependencies]
+bytemuck = { version = "1.23.2", features = ["derive"] }
+pollster = "0.4.0"
 serde = { version = "1.0.228", features = ["derive"] }
 thiserror = "2.0.17"
 uuid = { version = "1.18.1", features = ["serde", "v4"] }
+wgpu = "26.0.1"
 winit = "0.30.12"

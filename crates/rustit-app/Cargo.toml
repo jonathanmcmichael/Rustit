@@ -9,10 +9,14 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+bytemuck.workspace = true
+pollster.workspace = true
 rustit-core = { path = "../rustit-core" }
 rustit-geometry = { path = "../rustit-geometry" }
+rustit-geometry-truck = { path = "../rustit-geometry-truck" }
 rustit-ifc = { path = "../rustit-ifc" }
 rustit-model = { path = "../rustit-model" }
 rustit-schedule = { path = "../rustit-schedule" }
 uuid.workspace = true
+wgpu.workspace = true
 winit.workspace = true

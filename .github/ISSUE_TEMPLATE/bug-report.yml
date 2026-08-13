@@ -1,0 +1,49 @@
+name: Bug report
+description: Report reproducible behavior in the app, project model, geometry, scheduling, or adapters
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping make Rustit dependable. Please use public or synthetic project data only.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Desktop app and rendering
+        - BIM project model
+        - Geometry and Truck kernel
+        - Scheduling and CPM
+        - IFC and classification
+        - Persistence
+        - Vendor adapters
+        - Documentation and contributor experience
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened?
+      description: Include the smallest reproducible sequence and the result you observed.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should have happened?
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Operating system, Rust version, graphics adapter when relevant, and Rustit commit.
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Data safety
+      options:
+        - label: I removed customer, project, credential, and licensed classification data.
+          required: true
