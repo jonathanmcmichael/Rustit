@@ -1,0 +1,41 @@
+name: RFC proposal
+description: Propose a cross-cutting architectural decision before implementation
+title: "rfc: "
+labels:
+  - kind:rfc
+  - state:proposed
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and decision pressure
+      description: What cannot be solved cleanly within accepted boundaries?
+    validations:
+      required: true
+  - type: textarea
+    id: affected
+    attributes:
+      label: Affected contracts
+      description: Project model, public API, identity, persistence, geometry, transactions, adapters, or dependency direction.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence needed
+      description: Experiments, fixtures, benchmarks, primary specifications, or vendor limitations that should inform the RFC.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives to compare
+    validations:
+      required: true
+  - type: checkboxes
+    id: pause
+    attributes:
+      label: Implementation status
+      options:
+        - label: I understand the boundary-changing implementation should wait for an accepted RFC.
+          required: true

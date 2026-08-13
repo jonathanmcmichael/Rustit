@@ -1,0 +1,35 @@
+# Human-readable label taxonomy. Repository labels are synchronized manually
+# during bootstrap; this file is the canonical spelling and intent.
+areas:
+  - area:model
+  - area:geometry
+  - area:app
+  - area:schedule
+  - area:ifc
+  - area:4d
+  - area:persistence
+  - area:adapters
+  - area:docs
+kinds:
+  - kind:fixture
+  - kind:implementation
+  - kind:documentation
+  - kind:rfc
+sizes:
+  - size:xs
+  - size:s
+  - size:m
+states:
+  - state:needs-domain
+  - state:proposed
+  - state:ready
+  - state:blocked
+reviews:
+  - review:bim
+  - review:scheduling
+  - review:ifc
+  - review:rust
+  - review:geometry
+  - review:security
+coordination:
+  - ai-ready

@@ -78,6 +78,20 @@ An external system may call the same activity `A1040`, `781992`, or something el
 - [RFC 0002: Truck Geometry Kernel Evaluation](docs/rfcs/0002-truck-geometry-kernel-evaluation.md)
 - [Contributing](CONTRIBUTING.md)
 
+## Put your AI energy to work
+
+Rustit is designed for parallel, evidence-backed contribution. Start with an [`ai-ready` work packet](https://github.com/jonathanmcmichael/Rustit/issues?q=is%3Aissue%20state%3Aopen%20label%3Aai-ready), give it to the coding workflow you trust, and return a narrow pull request whose result can be reproduced by humans and CI.
+
+- [AI-assisted contribution policy](AI_CONTRIBUTING.md)
+- [Agent contract](AGENTS.md)
+- [Work-packet specification](docs/contributing/WORK_PACKETS.md)
+- [Definition of Done](docs/contributing/DEFINITION_OF_DONE.md)
+- [Contribution infrastructure roadmap](docs/CONTRIBUTION_ROADMAP.md)
+- [Community evidence scoreboard](docs/community/SCOREBOARD.md)
+- [Governance](GOVERNANCE.md) and [maintainers](MAINTAINERS.md)
+
+The project measures merged packets, fixtures, prevented regressions, round trips, and returning contributors. Prompt counts, token totals, and generated lines are not evidence of a better construction tool.
+
 Started as a joke. Built as a serious open-source experiment.
 
 The app assigns each new project one harmless development codename drawn from **Space King**, **Aqua Teen Hunger Force**, or **The Big Lez Show** territory—including **Sassy the Sasquatch**, **Big Lez**, **Mike Nolan**, **Clarence**, and **Donny**. These are affectionate cultural Easter eggs, not project dependencies or endorsements.

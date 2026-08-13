@@ -1,0 +1,54 @@
+name: Domain truth fixture
+description: Contribute a synthetic BIM, schedule, 4D, IFC, or sync scenario with known results
+title: "fixture: "
+labels:
+  - kind:fixture
+  - state:needs-domain
+body:
+  - type: dropdown
+    id: lab
+    attributes:
+      label: Truth lab
+      options:
+        - Wall Lab
+        - Schedule Lab
+        - 4D Lab
+        - IFC Lab
+        - Sync Lab
+    validations:
+      required: true
+  - type: textarea
+    id: scenario
+    attributes:
+      label: Scenario
+      description: Describe the smallest real-world behavior the fixture represents.
+    validations:
+      required: true
+  - type: textarea
+    id: inputs
+    attributes:
+      label: Synthetic inputs
+      description: Include units, time basis, tolerance, classifications, and identities when relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Independently known expected result
+      description: Explain how a domain reviewer knows the answer without running Rustit.
+    validations:
+      required: true
+  - type: textarea
+    id: failures
+    attributes:
+      label: Invalid or edge behavior
+      description: What should be rejected or diagnosed?
+  - type: checkboxes
+    id: rights
+    attributes:
+      label: Rights and privacy
+      options:
+        - label: This fixture contains no customer data, credentials, proprietary model files, or licensed classification tables.
+          required: true
+        - label: I have the right to contribute all included material under the repository license.
+          required: true
