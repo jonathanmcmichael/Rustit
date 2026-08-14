@@ -11,7 +11,9 @@ repository.workspace = true
 [dependencies]
 rustit-geometry = { path = "../rustit-geometry" }
 thiserror.workspace = true
-truck-meshalgo = "0.4.0"
+# Rustit needs Truck's tessellation algorithms, not its optional VTK importer.
+# Keeping default features off avoids pulling XML and compression parsers into
+# the authoring application when no VTK boundary exists yet.
+truck-meshalgo = { version = "0.4.0", default-features = false, features = ["tessellation"] }
 truck-modeling = "0.6.0"
-truck-shapeops = { version = "0.4.0", default-features = false }
 truck-stepio = "0.3.0"

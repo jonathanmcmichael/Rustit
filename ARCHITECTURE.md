@@ -33,7 +33,7 @@ Defines project-coordinate primitives, wall geometry inputs, mesh output, and th
 
 ### `rustit-geometry-truck`
 
-Implements the kernel-neutral geometry contract with the pure-Rust Truck crates. The evaluation prototype produces closed B-rep walls, deterministic render meshes, rectangular openings, experimental Booleans, and generic STEP geometry. It is a replaceable implementation—not the semantic BIM model, an IFC serializer, or a permanent exclusive-kernel decision. [RFC 0002](docs/rfcs/0002-truck-geometry-kernel-evaluation.md) records the evidence and open risks.
+Implements the kernel-neutral geometry contract with the pure-Rust Truck crates. The evaluation prototype produces closed B-rep walls, deterministic render meshes, authored rectangular openings, and generic STEP geometry. Experimental Boolean operations are intentionally excluded until Truck can supply them without unused vulnerable VTK dependencies. It is a replaceable implementation—not the semantic BIM model, an IFC serializer, or a permanent exclusive-kernel decision. [RFC 0002](docs/rfcs/0002-truck-geometry-kernel-evaluation.md) records the evidence and open risks.
 
 ### `rustit-model`
 

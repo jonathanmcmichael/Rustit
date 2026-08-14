@@ -60,3 +60,5 @@ Exit condition: a contributor can clone the repository, run the app, and see a w
 - Additional adapters for P6, Oracle Primavera Cloud, Bentley SYNCHRO, and community-selected systems
 
 Each milestone may change through the RFC process. The principles in [VISION.md](VISION.md) and dependency direction in [ARCHITECTURE.md](ARCHITECTURE.md) are the guardrails.
+
+The parallel [Contribution Infrastructure Roadmap](docs/CONTRIBUTION_ROADMAP.md) defines how work is decomposed, verified, reviewed, and distributed across a growing human-and-AI contributor community.

@@ -1,0 +1,98 @@
+name: AI-ready work packet
+description: Define a bounded, portable unit of work with objective evidence
+title: "work: "
+labels:
+  - state:proposed
+body:
+  - type: markdown
+    attributes:
+      value: A ready packet lets a contributor use any coding workflow without guessing what counts as correct. See `docs/contributing/WORK_PACKETS.md`.
+  - type: textarea
+    id: outcome
+    attributes:
+      label: User or domain outcome
+      description: Describe the observable result, not a broad subsystem or preferred implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: truth
+    attributes:
+      label: Truth source or fixture
+      description: Give independently known expected behavior, a synthetic example, or primary reference.
+    validations:
+      required: true
+  - type: textarea
+    id: invariants
+    attributes:
+      label: Invariants
+      description: List identity, IFC, units, dependency, vendor-neutrality, or other rules that must remain true.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Expected scope
+      description: Name the likely crates, files, or fixture and the smallest useful boundary.
+    validations:
+      required: true
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: Non-goals
+      description: Name adjacent work that should become a different packet.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance checks
+      description: Provide objective checks a reviewer can reproduce.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Required evidence
+      description: Tests, round trips, benchmark, screenshot, or documented manual verification.
+    validations:
+      required: true
+  - type: dropdown
+    id: size
+    attributes:
+      label: Estimated size
+      options:
+        - XS — one behavior or fixture
+        - S — one narrow crate slice
+        - M — coordinated vertical slice
+        - Needs decomposition
+    validations:
+      required: true
+  - type: dropdown
+    id: review
+    attributes:
+      label: Primary review lane
+      options:
+        - BIM / VDC
+        - Scheduling / project controls
+        - IFC / interoperability
+        - Geometry / CAD
+        - Graphics / application
+        - Persistence / transactions
+        - Security / supply chain
+        - Contributor experience / documentation
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies or blockers
+      description: Link prerequisite issues or RFCs, or write None.
+    validations:
+      required: true
+  - type: checkboxes
+    id: data
+    attributes:
+      label: Data safety
+      options:
+        - label: The proposed evidence is synthetic, public, or explicitly redistributable.
+          required: true

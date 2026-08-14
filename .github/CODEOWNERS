@@ -1,0 +1,10 @@
+# Bootstrap ownership. Add active domain reviewers here as governance expands.
+* @jonathanmcmichael
+
+/docs/rfcs/ @jonathanmcmichael
+/crates/rustit-ifc/ @jonathanmcmichael
+/crates/rustit-model/ @jonathanmcmichael
+/crates/rustit-schedule/ @jonathanmcmichael
+/crates/rustit-geometry/ @jonathanmcmichael
+/crates/rustit-geometry-truck/ @jonathanmcmichael
+/.github/ @jonathanmcmichael
