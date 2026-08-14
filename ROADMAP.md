@@ -2,7 +2,7 @@
 
 The roadmap favors complete vertical slices over broad collections of placeholders. Versions describe outcomes, not deadlines.
 
-## v0.0.1 — It Opens
+## v0.0.1 — It Opens · Achievement Unlocked
 
 - [x] Native desktop window
 - [x] Stable typed UUIDs
@@ -18,7 +18,7 @@ The roadmap favors complete vertical slices over broad collections of placeholde
 
 Exit condition: a contributor can clone the repository, run the app, and see a window backed by a valid in-memory BIM-plus-schedule project.
 
-## v0.0.2 — We Have Walls
+## v0.0.2 — We Have Walls · Dungeon Floor 1
 
 - [x] Evaluate Truck behind the kernel-neutral geometry contract
 - Create and edit a level and straight wall through the app
@@ -27,7 +27,7 @@ Exit condition: a contributor can clone the repository, run the app, and see a w
 - Orbit, pan, zoom, select, and inspect
 - Keep the semantic wall as the source of rendered geometry
 
-## v0.0.3 — Open Schedule
+## v0.0.3 — Open Schedule · Mordecai's Tutorial
 
 - Author activities and all four relationship types
 - Add work calendars, data date, actuals, and constraints
@@ -35,7 +35,7 @@ Exit condition: a contributor can clone the repository, run the app, and see a w
 - Link elements to activities and play a basic 4D sequence
 - Import/export a documented open schedule format
 
-## v0.0.4 — It Persists
+## v0.0.4 — It Persists · Safe Room
 
 - Define and migrate the PostgreSQL/PostGIS schema
 - Save and reopen the unified project model
@@ -43,7 +43,7 @@ Exit condition: a contributor can clone the repository, run the app, and see a w
 - Add transactions, optimistic concurrency, and object-level diffs
 - Define a dependable local/offline workflow
 
-## v0.0.5 — It Interoperates
+## v0.0.5 — It Interoperates · The Royal Court
 
 - Serialize the first IFC 4.3 authoring vertical slice without losing stable identity
 - Prototype one read-only schedule adapter

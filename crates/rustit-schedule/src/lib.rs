@@ -335,8 +335,8 @@ mod tests {
 
     #[test]
     fn calculates_a_finish_to_start_critical_path() {
-        let first = Activity::new("Lay out wall", 8);
-        let second = Activity::new("Frame wall", 4);
+        let first = Activity::new("Carl lays out wall", 8);
+        let second = Activity::new("Princess Donut frames wall", 4);
         let relationship =
             ActivityRelationship::new(first.id, second.id, RelationshipType::FinishStart, 0);
         let schedule = Schedule {
@@ -352,9 +352,9 @@ mod tests {
 
     #[test]
     fn reports_float_for_a_short_independent_activity() {
-        let first = Activity::new("A", 8);
-        let second = Activity::new("B", 4);
-        let independent = Activity::new("C", 2);
+        let first = Activity::new("Carl", 8);
+        let second = Activity::new("Princess Donut", 4);
+        let independent = Activity::new("Mongo", 2);
         let relationship =
             ActivityRelationship::new(first.id, second.id, RelationshipType::FinishStart, 0);
         let schedule = Schedule {
@@ -557,8 +557,8 @@ mod tests {
 
     #[test]
     fn rejects_cycles() {
-        let first = Activity::new("A", 8);
-        let second = Activity::new("B", 4);
+        let first = Activity::new("Carl", 8);
+        let second = Activity::new("Princess Donut", 4);
         let schedule = Schedule {
             activities: vec![first.clone(), second.clone()],
             relationships: vec![
@@ -572,7 +572,7 @@ mod tests {
 
     #[test]
     fn stable_ids_survive_serialization() {
-        let activity = Activity::new("Frame wall", 8);
+        let activity = Activity::new("Mordecai frames wall", 8);
         let json = serde_json::to_string(&activity).expect("serialize activity");
         let restored: Activity = serde_json::from_str(&json).expect("deserialize activity");
 

@@ -27,8 +27,8 @@ struct RustitApp {
 
 impl RustitApp {
     fn demo() -> Result<Self, Box<dyn Error>> {
-        let mut project = Project::new("Untitled project");
-        let level = Level::new("Level 1", 0.0);
+        let mut project = Project::new("The Royal Court");
+        let level = Level::new("Dungeon Floor 1", 0.0);
         let mut wall = Wall::new(
             level.id,
             Segment3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(6.0, 0.0, 0.0)),
@@ -40,7 +40,7 @@ impl RustitApp {
             "B2010",
             "Exterior Walls",
         )?);
-        let mut activity = Activity::new("Construct first wall", 8);
+        let mut activity = Activity::new("Carl constructs the first wall", 8);
         activity.add_classification(ClassificationReference::master_format(
             "project edition",
             "07 00 00",
@@ -67,7 +67,7 @@ impl ApplicationHandler for RustitApp {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if self.window.is_none() {
             let title = format!(
-                "Rustit — Semantic Wall | Project {} · {} wall · {} activity · {} 4D link",
+                "Rustit — Achievement: It Opens | Project {} · Floor 1 · {} wall · {} activity · {} 4D link",
                 easter_eggs::project_codename(self.project.id.as_uuid()),
                 self.project.model.walls.len(),
                 self.project.schedule.activities.len(),
@@ -174,6 +174,12 @@ mod tests {
         );
 
         assert_eq!(semantic_wall.geometry().baseline.start.x, minimum.x);
+        assert_eq!(app.project.name, "The Royal Court");
+        assert_eq!(app.project.model.levels[0].name, "Dungeon Floor 1");
+        assert_eq!(
+            app.project.schedule.activities[0].name,
+            "Carl constructs the first wall"
+        );
         assert_eq!(semantic_wall.geometry().baseline.start.z, minimum.z);
         assert_eq!(minimum.y, -semantic_wall.thickness / 2.0);
         assert_eq!(maximum, Point3::new(6.0, 0.1, 3.0));

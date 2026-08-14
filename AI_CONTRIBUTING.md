@@ -50,3 +50,7 @@ In the pull request, state:
 - whether inputs were exclusively synthetic or public.
 
 The disclosure is for review quality, not attribution theater. Contributions are accepted because the repository can understand, reproduce, and maintain them.
+
+## Synthetic naming
+
+When generated examples need arbitrary names, follow [EASTER_EGGS.md](EASTER_EGGS.md): Dungeon Crawler Carl references have first priority, stay spoiler-free, and never replace the explicit domain meaning. Agents may name a fixture `princess-donut-straight-wall`; they may not rename `IfcWall`, `ActivityRelationship`, or a vendor-owned field.

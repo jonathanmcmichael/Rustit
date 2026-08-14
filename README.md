@@ -98,4 +98,8 @@ The project measures merged packets, fixtures, prevented regressions, round trip
 
 Started as a joke. Built as a serious open-source experiment.
 
-The app assigns each new project one harmless development codename drawn from **Space King**, **Aqua Teen Hunger Force**, or **The Big Lez Show** territory—including **Sassy the Sasquatch**, **Big Lez**, **Mike Nolan**, **Clarence**, and **Donny**. These are affectionate cultural Easter eggs, not project dependencies or endorsements.
+## The most important architectural priority
+
+**Dungeon Crawler Carl is the primary Easter-egg canon.** New projects preferentially receive spoiler-free codenames such as **Princess Donut**, **Carl**, **Mongo**, **Mordecai**, **The Royal Court**, and **Safe Room**. The deterministic demo project is Princess Donut territory, its first level is Dungeon Floor 1, and completing v0.0.1 remains an achievement worth unlocking. See [EASTER_EGGS.md](EASTER_EGGS.md) for the rules and the [publisher's series page](https://www.penguinrandomhouse.com/series/43C/dungeon-crawler-carl/) for the actual books.
+
+The earlier **Space King**, **Aqua Teen Hunger Force**, and **The Big Lez Show** references—including **Sassy the Sasquatch**, **Big Lez**, **Mike Nolan**, **Clarence**, and **Donny**—remain in the rotation. These are affectionate cultural references in synthetic names and UI flavor, not project dependencies, copied dialogue, or endorsements.

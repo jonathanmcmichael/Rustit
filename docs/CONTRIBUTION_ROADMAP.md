@@ -2,7 +2,7 @@
 
 The product roadmap describes what Rustit should do. This roadmap describes how a growing community can build it without losing architectural coherence.
 
-## Stage 1 — Establish the foundry
+## Stage 1 — Establish the foundry · Safe Room
 
 - Land the initial project, geometry, vision, and rendering stack on `main`.
 - Publish governance, maintainer, conduct, security, AI-assistance, and work-packet policies.
@@ -11,7 +11,7 @@ The product roadmap describes what Rustit should do. This roadmap describes how 
 
 Exit condition: a newcomer can discover who decides, what is safe to change, and how completion is judged.
 
-## Stage 2 — Encode project truth
+## Stage 2 — Encode project truth · Mordecai's Tutorial
 
 - Add Wall, Schedule, 4D, IFC, and Sync Labs with synthetic fixtures.
 - Provide `cargo xtask verify` as the common local and CI gate.
@@ -20,7 +20,7 @@ Exit condition: a newcomer can discover who decides, what is safe to change, and
 
 Exit condition: independent teams can change different lanes while shared fixtures detect semantic regressions.
 
-## Stage 3 — Grow parallel lanes
+## Stage 3 — Grow parallel lanes · The Royal Court
 
 - Maintain ready queues for model, geometry, app, scheduling, IFC, 4D, persistence, adapters, and docs.
 - Pair Rust reviewers with domain reviewers for changes that need both.
@@ -29,7 +29,7 @@ Exit condition: independent teams can change different lanes while shared fixtur
 
 Exit condition: useful contributions arrive from people who are not already repository experts.
 
-## Stage 4 — Distribute stewardship
+## Stage 4 — Distribute stewardship · Next Floor
 
 - Recognize recurring domain reviewers.
 - Add maintainers through the public governance process.
