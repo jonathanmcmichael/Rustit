@@ -185,7 +185,7 @@ The project begins with deliberately modest milestones:
 - **v0.0.4 — It Persists:** store and reopen the unified project through PostgreSQL/PostGIS with explicit concurrency behavior.
 - **v0.0.5 — It Interoperates:** complete the first identity-preserving IFC slice and a reviewable schedule adapter.
 
-The names are playful. The exit conditions are not.
+The names are playful. The exit conditions are not. Dungeon Crawler Carl has first claim on harmless milestone aliases, demo projects, and synthetic fixtures; [the Easter-egg policy](EASTER_EGGS.md) keeps that personality out of canonical construction semantics.
 
 ## An invitation
 

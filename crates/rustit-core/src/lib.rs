@@ -150,8 +150,8 @@ mod tests {
 
     #[test]
     fn creates_a_vendor_independent_4d_link() {
-        let mut project = Project::new("Test project");
-        let level = Level::new("Level 1", 0.0);
+        let mut project = Project::new("The Royal Court test project");
+        let level = Level::new("Dungeon Floor 1", 0.0);
         let wall = Wall::new(
             level.id,
             Segment3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(5.0, 0.0, 0.0)),
@@ -159,7 +159,7 @@ mod tests {
             3.0,
         )
         .expect("valid wall");
-        let activity = Activity::new("Frame wall", 8);
+        let activity = Activity::new("Carl frames wall", 8);
         let link = ElementActivityLink::new(wall.id, activity.id, ElementActivityRole::Construct);
 
         project.model.add_level(level).expect("add level");

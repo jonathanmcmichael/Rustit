@@ -180,7 +180,7 @@ mod tests {
 
     #[test]
     fn wall_requires_an_existing_level() {
-        let level = Level::new("Level 1", 0.0);
+        let level = Level::new("Dungeon Floor 1", 0.0);
         let wall = Wall::new(
             level.id,
             Segment3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(5.0, 0.0, 0.0)),
@@ -198,7 +198,7 @@ mod tests {
 
     #[test]
     fn stable_ids_survive_serialization() {
-        let level = Level::new("Level 1", 0.0);
+        let level = Level::new("Dungeon Floor 1", 0.0);
         let json = serde_json::to_string(&level).expect("serialize level");
         let restored: Level = serde_json::from_str(&json).expect("deserialize level");
 
@@ -207,7 +207,7 @@ mod tests {
 
     #[test]
     fn wall_is_ifc_based_and_accepts_multiple_classification_systems() {
-        let level = Level::new("Level 1", 0.0);
+        let level = Level::new("Dungeon Floor 1", 0.0);
         let mut wall = Wall::new(
             level.id,
             Segment3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(5.0, 0.0, 0.0)),

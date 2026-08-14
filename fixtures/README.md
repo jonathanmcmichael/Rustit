@@ -2,13 +2,13 @@
 
 These files are small, synthetic, MPL-2.0-licensed reference scenarios. They encode independently readable expectations for parallel contribution lanes and are executed by `crates/rustit-fixtures/tests/truth_labs.rs`.
 
-| Lab | Current truth |
-| --- | --- |
-| Wall Lab | Authored dimensions produce known bounds and 12 triangles; invalid dimensions are rejected |
-| Schedule Lab | All four CPM relationship types and one lead produce known working-hour timings |
-| 4D Lab | Stable element and activity identities form a vendor-neutral process assignment |
-| IFC Lab | Current Rustit semantic types map to the declared IFC 4.3 ADD2 entity families |
-| Sync Lab | A canonical UUID remains separate from a vendor-owned external identifier |
+| Lab | DCC fixture flavor | Current truth |
+| --- | --- | --- |
+| Wall Lab | Princess Donut | Authored dimensions produce known bounds and 12 triangles; invalid dimensions are rejected |
+| Schedule Lab | Mordecai's tutorial | All four CPM relationship types and one lead produce known working-hour timings |
+| 4D Lab | The Royal Court | Stable element and activity identities form a vendor-neutral process assignment |
+| IFC Lab | Crawler semantics | Current Rustit semantic types map to the declared IFC 4.3 ADD2 entity families |
+| Sync Lab | Borant label | A canonical UUID remains separate from a vendor-owned external identifier |
 
 ## Fixture rules
 
@@ -18,5 +18,6 @@ These files are small, synthetic, MPL-2.0-licensed reference scenarios. They enc
 - Use deterministic identifiers so diffs and round trips remain readable.
 - Do not contribute customer data, proprietary model files, credentials, or licensed classification catalogs.
 - Add a fixture or extend an existing one when a domain behavior changes.
+- Prefer spoiler-free Dungeon Crawler Carl case names when a synthetic label needs personality; keep the construction meaning and expected result explicit.
 
 Run only these contracts with `cargo xtask labs`, or run the complete repository gate with `cargo xtask verify`.

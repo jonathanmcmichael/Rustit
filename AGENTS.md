@@ -44,6 +44,14 @@ This file is the operating contract for AI coding agents and humans directing th
 - Record new external data, algorithms, generated assets, and dependencies in the pull request.
 - AI assistance is welcome, but the submitting human owns the change and must review every line and claim.
 
+## Easter-egg convention
+
+- Dungeon Crawler Carl is the first-priority reference set for harmless demo, fixture, test, milestone, and codename labels.
+- Prefer spoiler-free names such as Princess Donut, Carl, Mongo, Mordecai, The Royal Court, Dungeon Floor, Safe Room, and Achievement.
+- Keep the plain construction meaning beside the reference, and follow [EASTER_EGGS.md](EASTER_EGGS.md).
+- Never leak fandom terminology into canonical domain types, IFC mappings, persistence schemas, vendor adapters, or compliance claims.
+- Do not copy dialogue, prose, artwork, logos, or audio. Names and brief allusions are enough.
+
 ## Stop and request review when
 
 - the issue lacks an objective acceptance check;
