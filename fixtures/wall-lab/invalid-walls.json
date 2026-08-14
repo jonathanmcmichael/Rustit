@@ -1,0 +1,27 @@
+{
+  "case": "invalid-wall-dimensions",
+  "units": "metres",
+  "cases": [
+    {
+      "name": "zero-height",
+      "baseline_start": [0.0, 0.0, 0.0],
+      "baseline_end": [6.0, 0.0, 0.0],
+      "thickness": 0.2,
+      "height": 0.0
+    },
+    {
+      "name": "negative-thickness",
+      "baseline_start": [0.0, 0.0, 0.0],
+      "baseline_end": [6.0, 0.0, 0.0],
+      "thickness": -0.2,
+      "height": 3.0
+    },
+    {
+      "name": "degenerate-baseline",
+      "baseline_start": [2.0, 1.0, 0.0],
+      "baseline_end": [2.0, 1.0, 0.0],
+      "thickness": 0.2,
+      "height": 3.0
+    }
+  ]
+}

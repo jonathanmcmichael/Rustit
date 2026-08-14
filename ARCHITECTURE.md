@@ -33,7 +33,7 @@ Defines project-coordinate primitives, wall geometry inputs, mesh output, and th
 
 ### `rustit-geometry-truck`
 
-Implements the kernel-neutral geometry contract with the pure-Rust Truck crates. The evaluation prototype produces closed B-rep walls, deterministic render meshes, rectangular openings, experimental Booleans, and generic STEP geometry. It is a replaceable implementation—not the semantic BIM model, an IFC serializer, or a permanent exclusive-kernel decision. [RFC 0002](docs/rfcs/0002-truck-geometry-kernel-evaluation.md) records the evidence and open risks.
+Implements the kernel-neutral geometry contract with the pure-Rust Truck crates. The evaluation prototype produces closed B-rep walls, deterministic render meshes, authored rectangular openings, and generic STEP geometry. Experimental Boolean operations are intentionally excluded until Truck can supply them without unused vulnerable VTK dependencies. It is a replaceable implementation—not the semantic BIM model, an IFC serializer, or a permanent exclusive-kernel decision. [RFC 0002](docs/rfcs/0002-truck-geometry-kernel-evaluation.md) records the evidence and open risks.
 
 ### `rustit-model`
 
@@ -58,6 +58,14 @@ Defines import, export planning, and export application contracts. Adapters decl
 ### `rustit-app`
 
 Creates a native window, builds a tiny in-memory project, asks `rustit-geometry-truck` to generate geometry from its semantic wall, and renders the resulting kernel-neutral mesh with `wgpu`. It is the composition root, never the owner of the semantic model or Truck topology.
+
+### `rustit-fixtures`
+
+Executes small synthetic Wall, Schedule, 4D, IFC, and Sync Labs against public domain contracts. It is test infrastructure, not a production dependency or an alternate project model. Expected values must be independently readable and must never be generated from the implementation under test without domain review.
+
+### `xtask`
+
+Provides contributor commands such as `cargo xtask verify` and `cargo xtask labs`. It orchestrates repository checks but contains no product behavior.
 
 ## Identity
 

@@ -1,0 +1,8 @@
+{
+  "case": "p6-external-identity",
+  "canonical_object_id": "00000000-0000-4000-8000-000000000301",
+  "system": "primavera_p6",
+  "external_id": "A1040",
+  "expected_canonical_object_id": "00000000-0000-4000-8000-000000000301",
+  "expected_external_id": "A1040"
+}

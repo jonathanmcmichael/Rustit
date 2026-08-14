@@ -1,5 +1,8 @@
-blank_issues_enabled: true
+blank_issues_enabled: false
 contact_links:
   - name: Architectural change
     url: https://github.com/jonathanmcmichael/Rustit/blob/main/CONTRIBUTING.md#rfc-process
     about: Read the RFC guidance before proposing a cross-cutting architectural change.
+  - name: Security vulnerability
+    url: https://github.com/jonathanmcmichael/Rustit/security
+    about: Report vulnerabilities privately; do not publish exploit or credential details in an issue.

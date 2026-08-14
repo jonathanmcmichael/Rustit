@@ -1,0 +1,13 @@
+{
+  "case": "implemented-semantic-entity-map",
+  "schema": "IFC4X3_ADD2",
+  "serialization_status": "not_implemented",
+  "mappings": [
+    { "rustit_type": "Project", "ifc_entity": "IfcProject" },
+    { "rustit_type": "Level", "ifc_entity": "IfcBuildingStorey" },
+    { "rustit_type": "Wall", "ifc_entity": "IfcWall" },
+    { "rustit_type": "Activity", "ifc_entity": "IfcTask" },
+    { "rustit_type": "ActivityRelationship", "ifc_entity": "IfcRelSequence" },
+    { "rustit_type": "ElementActivityLink", "ifc_entity": "IfcRelAssignsToProcess" }
+  ]
+}

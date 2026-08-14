@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "crates/rustit-fixtures",
     "crates/rustit-adapters",
     "crates/rustit-app",
     "crates/rustit-core",
@@ -9,6 +10,7 @@ members = [
     "crates/rustit-model",
     "crates/rustit-postgres",
     "crates/rustit-schedule",
+    "xtask",
 ]
 resolver = "2"
 
@@ -25,6 +27,7 @@ homepage = "https://github.com/jonathanmcmichael/Rustit"
 bytemuck = { version = "1.23.2", features = ["derive"] }
 pollster = "0.4.0"
 serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
 thiserror = "2.0.17"
 uuid = { version = "1.18.1", features = ["serde", "v4"] }
 wgpu = "26.0.1"
