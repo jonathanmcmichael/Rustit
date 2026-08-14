@@ -12,6 +12,7 @@ A Rustit contribution is done when a reviewer can understand why it exists, repr
 - Documents material AI assistance, new dependencies, and external assumptions.
 - Passes `cargo xtask verify` when available.
 - Leaves no unexplained generated files, credentials, customer data, or licensed catalogs.
+- Uses the spoiler-free Dungeon Crawler Carl naming convention for arbitrary synthetic labels when appropriate, without weakening plain domain language.
 
 ## Domain behavior
 

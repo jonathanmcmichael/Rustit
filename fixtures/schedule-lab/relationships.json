@@ -1,9 +1,9 @@
 {
-  "case": "relationship-types-and-offsets",
+  "case": "mordecai-cpm-relationship-tutorial",
   "time_basis": "working_hours_without_calendars",
   "cases": [
     {
-      "name": "finish-start",
+      "name": "carl-finish-start",
       "relationship": "finish_start",
       "predecessor_duration": 8,
       "successor_duration": 4,
@@ -13,7 +13,7 @@
       "expected_project_duration": 12
     },
     {
-      "name": "start-start-positive-lag",
+      "name": "donut-start-start-positive-lag",
       "relationship": "start_start",
       "predecessor_duration": 8,
       "successor_duration": 4,
@@ -23,7 +23,7 @@
       "expected_project_duration": 8
     },
     {
-      "name": "finish-finish-positive-lag",
+      "name": "mongo-finish-finish-positive-lag",
       "relationship": "finish_finish",
       "predecessor_duration": 8,
       "successor_duration": 4,
@@ -33,7 +33,7 @@
       "expected_project_duration": 10
     },
     {
-      "name": "start-finish-positive-lag",
+      "name": "mordecai-start-finish-positive-lag",
       "relationship": "start_finish",
       "predecessor_duration": 8,
       "successor_duration": 4,
@@ -43,7 +43,7 @@
       "expected_project_duration": 10
     },
     {
-      "name": "finish-start-two-hour-lead",
+      "name": "borant-finish-start-two-hour-lead",
       "relationship": "finish_start",
       "predecessor_duration": 8,
       "successor_duration": 4,
