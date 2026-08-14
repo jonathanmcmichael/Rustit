@@ -88,8 +88,11 @@ mod tests {
 
     #[test]
     fn supports_future_vendor_systems_without_changing_core_types() {
-        let system = ExternalSystem::Other("OpenProject".to_owned());
+        let system = ExternalSystem::Other("Borant (fictional)".to_owned());
 
-        assert_eq!(system, ExternalSystem::Other("OpenProject".to_owned()));
+        assert_eq!(
+            system,
+            ExternalSystem::Other("Borant (fictional)".to_owned())
+        );
     }
 }

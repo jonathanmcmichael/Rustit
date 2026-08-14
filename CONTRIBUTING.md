@@ -48,6 +48,10 @@ cargo test --workspace --all-targets
 
 Use `cargo xtask verify` for the complete local gate and `cargo xtask labs` to run only the synthetic domain contracts. To see the current vertical slice, run `cargo run -p rustit-app`. It should open a native window containing an orange wall generated from the semantic demo project. A graphics adapter compatible with `wgpu` is required.
 
+## Naming synthetic work
+
+Dungeon Crawler Carl is Rustit's first-priority Easter-egg vocabulary for demos, fixtures, tests, milestones, and codenames. Prefer recognizable, spoiler-free references while preserving an explicit construction meaning. The full guardrails are in [EASTER_EGGS.md](EASTER_EGGS.md); copied dialogue, artwork, spoilers, and fandom terminology in canonical APIs are out of scope.
+
 Add focused tests for new domain behavior. Code that only declares future architecture without supporting the current vertical slice usually belongs in an RFC rather than a crate.
 
 ## Pull requests

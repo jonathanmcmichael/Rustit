@@ -19,6 +19,8 @@ An issue may receive `state:ready` and `ai-ready` when it contains:
 
 If any required fact is uncertain, label the issue `state:needs-domain` rather than asking an agent to invent it.
 
+When a packet needs synthetic names, apply [the Easter-egg policy](../../EASTER_EGGS.md): Dungeon Crawler Carl gets first priority, the reference stays spoiler-free, and the construction meaning remains explicit.
+
 ## Size guide
 
 | Size | Expected shape |

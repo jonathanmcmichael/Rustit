@@ -128,7 +128,7 @@ struct SyncFixture {
 #[test]
 fn wall_lab_matches_authored_dimensions_and_complete_mesh() {
     let fixture: StraightWallFixture = serde_json::from_str(STRAIGHT_WALL).expect("wall fixture");
-    assert_eq!(fixture.case, "straight-wall-a");
+    assert_eq!(fixture.case, "princess-donut-straight-wall");
     assert_eq!(fixture.units, "metres");
 
     let mut wall = Wall::new(
@@ -155,7 +155,7 @@ fn wall_lab_matches_authored_dimensions_and_complete_mesh() {
 fn wall_lab_rejects_each_named_invalid_case() {
     let fixture: InvalidWallsFixture =
         serde_json::from_str(INVALID_WALLS).expect("invalid-wall fixture");
-    assert_eq!(fixture.case, "invalid-wall-dimensions");
+    assert_eq!(fixture.case, "dungeon-invalid-wall-dimensions");
     assert_eq!(fixture.units, "metres");
 
     for case in fixture.cases {
@@ -172,12 +172,12 @@ fn wall_lab_rejects_each_named_invalid_case() {
 #[test]
 fn schedule_lab_matches_independently_calculated_relationship_timings() {
     let fixture: ScheduleFixture = serde_json::from_str(RELATIONSHIPS).expect("schedule fixture");
-    assert_eq!(fixture.case, "relationship-types-and-offsets");
+    assert_eq!(fixture.case, "mordecai-cpm-relationship-tutorial");
     assert_eq!(fixture.time_basis, "working_hours_without_calendars");
 
     for case in fixture.cases {
-        let predecessor = Activity::new("Predecessor", case.predecessor_duration);
-        let successor = Activity::new("Successor", case.successor_duration);
+        let predecessor = Activity::new("Carl predecessor", case.predecessor_duration);
+        let successor = Activity::new("Princess Donut successor", case.successor_duration);
         let successor_id = successor.id;
         let schedule = Schedule {
             activities: vec![predecessor.clone(), successor],
@@ -217,12 +217,12 @@ fn schedule_lab_matches_independently_calculated_relationship_timings() {
 #[test]
 fn four_d_lab_preserves_all_stable_ids_in_a_vendor_neutral_link() {
     let fixture: FourDFixture = serde_json::from_str(WALL_4D_LINK).expect("4D fixture");
-    assert_eq!(fixture.case, "wall-construction-link");
+    assert_eq!(fixture.case, "royal-court-wall-construction-link");
     assert_eq!(fixture.role, "construct");
 
-    let mut project = Project::new("4D Lab");
+    let mut project = Project::new("The Royal Court 4D Lab");
     project.id = ProjectId::from_uuid(parse_uuid(&fixture.project_id));
-    let mut level = Level::new("Level 1", 0.0);
+    let mut level = Level::new("Dungeon Floor 1", 0.0);
     level.id = LevelId::from_uuid(parse_uuid(&fixture.level_id));
     let mut wall = Wall::new(
         level.id,
@@ -232,7 +232,7 @@ fn four_d_lab_preserves_all_stable_ids_in_a_vendor_neutral_link() {
     )
     .expect("4D fixture wall");
     wall.id = ElementId::from_uuid(parse_uuid(&fixture.wall_id));
-    let mut activity = Activity::new("Construct wall", 8);
+    let mut activity = Activity::new("Carl constructs wall", 8);
     activity.id = ActivityId::from_uuid(parse_uuid(&fixture.activity_id));
     let mut link = ElementActivityLink::new(wall.id, activity.id, ElementActivityRole::Construct);
     link.id = ElementActivityLinkId::from_uuid(parse_uuid(&fixture.link_id));
@@ -257,7 +257,7 @@ fn four_d_lab_preserves_all_stable_ids_in_a_vendor_neutral_link() {
 #[test]
 fn ifc_lab_matches_the_declared_semantic_mapping_without_claiming_serialization() {
     let fixture: IfcMappingFixture = serde_json::from_str(IFC_MAPPING).expect("IFC fixture");
-    assert_eq!(fixture.case, "implemented-semantic-entity-map");
+    assert_eq!(fixture.case, "crawler-semantic-entity-map");
     assert_eq!(
         IfcSchemaVersion::Ifc4x3Add2.schema_identifier(),
         fixture.schema
@@ -281,7 +281,7 @@ fn ifc_lab_matches_the_declared_semantic_mapping_without_claiming_serialization(
 #[test]
 fn sync_lab_keeps_the_canonical_uuid_separate_from_the_p6_identifier() {
     let fixture: SyncFixture = serde_json::from_str(P6_IDENTITY).expect("sync fixture");
-    assert_eq!(fixture.case, "p6-external-identity");
+    assert_eq!(fixture.case, "borant-p6-external-identity");
     assert_eq!(fixture.system, "primavera_p6");
     let identity = ExternalIdentity {
         object_id: parse_uuid(&fixture.canonical_object_id),

@@ -1,5 +1,5 @@
 {
-  "case": "implemented-semantic-entity-map",
+  "case": "crawler-semantic-entity-map",
   "schema": "IFC4X3_ADD2",
   "serialization_status": "not_implemented",
   "mappings": [

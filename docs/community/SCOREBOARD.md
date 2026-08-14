@@ -15,6 +15,7 @@ The scoreboard is a recurring maintainer snapshot of useful project evidence. Up
 | Coordinated public challenges | 1 |
 | Required pull-request checks | 3 (Linux, Windows, dependency review) |
 | Active domain reviewers beyond bootstrap maintainer | 0 |
+| Primary Easter-egg canon | Dungeon Crawler Carl |
 
 ## What future updates should report
 

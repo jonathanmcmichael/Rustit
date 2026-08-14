@@ -7,6 +7,9 @@ body:
   - type: markdown
     attributes:
       value: A ready packet lets a contributor use any coding workflow without guessing what counts as correct. See `docs/contributing/WORK_PACKETS.md`.
+  - type: markdown
+    attributes:
+      value: If the packet needs arbitrary synthetic names, Dungeon Crawler Carl references have first priority under `EASTER_EGGS.md`. Keep them spoiler-free and preserve the plain construction meaning.
   - type: textarea
     id: outcome
     attributes:

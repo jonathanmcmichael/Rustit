@@ -29,6 +29,7 @@ Closes #
 - [ ] Inputs are synthetic, public, or explicitly redistributable
 - [ ] No credentials, customer data, proprietary model files, or licensed catalogs are included
 - [ ] New dependencies and external assumptions are explained
+- [ ] Synthetic names follow `EASTER_EGGS.md` where appropriate without obscuring domain meaning
 
 Material AI assistance: <!-- None, or tools used and what the human independently reviewed -->
 
