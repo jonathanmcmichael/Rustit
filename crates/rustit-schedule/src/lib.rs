@@ -373,6 +373,188 @@ mod tests {
         assert!(!timing.is_critical);
     }
 
+    /// Every fixture below states durations, relationship type, and lag in
+    /// working hours so a scheduler can recalculate the network by hand.
+    fn timing_for(result: &CpmResult, activity_id: ActivityId) -> CpmTiming {
+        *result
+            .timings
+            .iter()
+            .find(|timing| timing.activity_id == activity_id)
+            .expect("timing for a scheduled activity")
+    }
+
+    /// Start-to-start ladder: reinforcing follows formwork by a fixed offset
+    /// instead of waiting for the whole wall to be formed.
+    ///
+    /// `Form CIP wall` 24 h, `Place wall reinforcing` 16 h, SS with 8 h lag.
+    /// Reinforcing starts at hour 8 and finishes at hour 24, the same hour the
+    /// formwork finishes, so the crews overlap and both remain critical.
+    #[test]
+    fn calculates_a_start_to_start_relationship_with_positive_lag() {
+        let formwork = Activity::new("Form CIP wall", 24);
+        let reinforcing = Activity::new("Place wall reinforcing", 16);
+        let relationship =
+            ActivityRelationship::new(formwork.id, reinforcing.id, RelationshipType::StartStart, 8);
+        let schedule = Schedule {
+            activities: vec![formwork.clone(), reinforcing.clone()],
+            relationships: vec![relationship],
+        };
+
+        let result = calculate_cpm(&schedule).expect("valid network");
+        let formwork_timing = timing_for(&result, formwork.id);
+        let reinforcing_timing = timing_for(&result, reinforcing.id);
+
+        assert_eq!(formwork_timing.early_start, 0);
+        assert_eq!(formwork_timing.early_finish, 24);
+        // Successor start is driven by the predecessor start plus the lag,
+        // never by the predecessor finish.
+        assert_eq!(reinforcing_timing.early_start, 8);
+        assert_eq!(reinforcing_timing.early_finish, 24);
+        assert_eq!(result.project_duration_hours, 24);
+        assert!(formwork_timing.is_critical);
+        assert!(reinforcing_timing.is_critical);
+    }
+
+    /// Finish-to-finish trailing activity: backfill may proceed alongside the
+    /// conduit installation but cannot be completed until 8 h after it.
+    ///
+    /// `Install underground conduit` 40 h, `Backfill and compact trench` 16 h,
+    /// FF with 8 h lag. Backfill finishes at hour 48 (40 + 8), so it starts at
+    /// hour 32 and the network runs 8 h longer than the conduit alone.
+    #[test]
+    fn calculates_a_finish_to_finish_relationship_with_positive_lag() {
+        let conduit = Activity::new("Install underground conduit", 40);
+        let backfill = Activity::new("Backfill and compact trench", 16);
+        let relationship =
+            ActivityRelationship::new(conduit.id, backfill.id, RelationshipType::FinishFinish, 8);
+        let schedule = Schedule {
+            activities: vec![conduit.clone(), backfill.clone()],
+            relationships: vec![relationship],
+        };
+
+        let result = calculate_cpm(&schedule).expect("valid network");
+        let conduit_timing = timing_for(&result, conduit.id);
+        let backfill_timing = timing_for(&result, backfill.id);
+
+        assert_eq!(conduit_timing.early_finish, 40);
+        // The lag applies between the two finishes; the successor start is
+        // derived from its own duration.
+        assert_eq!(
+            backfill_timing.early_finish,
+            conduit_timing.early_finish + 8
+        );
+        assert_eq!(backfill_timing.early_start, 32);
+        assert_eq!(result.project_duration_hours, 48);
+        assert!(conduit_timing.is_critical);
+        assert!(backfill_timing.is_critical);
+    }
+
+    /// Start-to-finish, the relationship type that only reads correctly for a
+    /// temporary system handing over to a permanent one: temporary power is
+    /// maintained until permanent power is energized.
+    ///
+    /// `Utility service tie-in` 40 h finish-start `Energize permanent
+    /// switchgear` 16 h, which start-finishes `Maintain temporary power` 16 h
+    /// with no lag. Permanent switchgear starts at hour 40, so temporary power
+    /// must finish no earlier than hour 40 and therefore starts at hour 24.
+    /// It carries 16 h of total float because nothing follows it, while the
+    /// permanent power chain drives the 56 h project duration.
+    #[test]
+    fn calculates_a_start_to_finish_relationship_for_a_temporary_system() {
+        let tie_in = Activity::new("Utility service tie-in", 40);
+        let permanent_power = Activity::new("Energize permanent switchgear", 16);
+        let temporary_power = Activity::new("Maintain temporary power", 16);
+        let schedule = Schedule {
+            activities: vec![
+                tie_in.clone(),
+                permanent_power.clone(),
+                temporary_power.clone(),
+            ],
+            relationships: vec![
+                ActivityRelationship::new(
+                    tie_in.id,
+                    permanent_power.id,
+                    RelationshipType::FinishStart,
+                    0,
+                ),
+                ActivityRelationship::new(
+                    permanent_power.id,
+                    temporary_power.id,
+                    RelationshipType::StartFinish,
+                    0,
+                ),
+            ],
+        };
+
+        let result = calculate_cpm(&schedule).expect("valid network");
+        let permanent_timing = timing_for(&result, permanent_power.id);
+        let temporary_timing = timing_for(&result, temporary_power.id);
+
+        assert_eq!(permanent_timing.early_start, 40);
+        // The successor finish, not its start, is tied to the predecessor start.
+        assert_eq!(temporary_timing.early_finish, permanent_timing.early_start);
+        assert_eq!(temporary_timing.early_start, 24);
+        assert_eq!(result.project_duration_hours, 56);
+        assert!(permanent_timing.is_critical);
+        assert_eq!(temporary_timing.total_float, 16);
+        assert!(!temporary_timing.is_critical);
+    }
+
+    /// Negative lag (lead) overlapping two trades.
+    ///
+    /// `Frame interior partitions` 40 h, `Rough-in branch conduit` 24 h, FS
+    /// with a 16 h lead. Rough-in starts at hour 24 instead of hour 40, so the
+    /// project runs 48 h rather than the 64 h an unmodified finish-start chain
+    /// would produce, and both activities stay critical.
+    #[test]
+    fn calculates_a_finish_to_start_lead() {
+        let framing = Activity::new("Frame interior partitions", 40);
+        let rough_in = Activity::new("Rough-in branch conduit", 24);
+        let relationship =
+            ActivityRelationship::new(framing.id, rough_in.id, RelationshipType::FinishStart, -16);
+        let schedule = Schedule {
+            activities: vec![framing.clone(), rough_in.clone()],
+            relationships: vec![relationship],
+        };
+
+        let result = calculate_cpm(&schedule).expect("valid network");
+        let framing_timing = timing_for(&result, framing.id);
+        let rough_in_timing = timing_for(&result, rough_in.id);
+
+        assert_eq!(framing_timing.early_finish, 40);
+        assert_eq!(rough_in_timing.early_start, 24);
+        assert_eq!(rough_in_timing.early_finish, 48);
+        assert_eq!(result.project_duration_hours, 48);
+        assert!(framing_timing.is_critical);
+        assert!(rough_in_timing.is_critical);
+    }
+
+    /// A lead longer than the predecessor duration cannot pull work in front of
+    /// the project start. `Deliver curtain wall units` 8 h leads `Prepare embed
+    /// survey` 24 h by 24 h, which would imply an hour -16 start. The engine
+    /// floors early start at hour 0 instead of scheduling negative time, so the
+    /// relationship stops driving and the predecessor gains 16 h of float.
+    #[test]
+    fn a_lead_cannot_pull_a_successor_before_project_start() {
+        let delivery = Activity::new("Deliver curtain wall units", 8);
+        let survey = Activity::new("Prepare embed survey", 24);
+        let relationship =
+            ActivityRelationship::new(delivery.id, survey.id, RelationshipType::FinishStart, -24);
+        let schedule = Schedule {
+            activities: vec![delivery.clone(), survey.clone()],
+            relationships: vec![relationship],
+        };
+
+        let result = calculate_cpm(&schedule).expect("valid network");
+        let delivery_timing = timing_for(&result, delivery.id);
+        let survey_timing = timing_for(&result, survey.id);
+
+        assert_eq!(survey_timing.early_start, 0);
+        assert_eq!(result.project_duration_hours, 24);
+        assert_eq!(delivery_timing.total_float, 16);
+        assert!(!delivery_timing.is_critical);
+    }
+
     #[test]
     fn rejects_cycles() {
         let first = Activity::new("Carl", 8);
