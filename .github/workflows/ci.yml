@@ -29,14 +29,25 @@ jobs:
       - name: Cache Rust build outputs
         uses: Swatinem/rust-cache@v2
 
-      - name: Check formatting
-        run: cargo fmt --all -- --check
+      - name: Run the complete contributor gate
+        run: cargo xtask verify
 
-      - name: Check workspace
+  windows:
+    name: Windows compile and test
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build outputs
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check workspace on Windows
         run: cargo check --workspace --all-targets --locked
 
-      - name: Lint workspace
-        run: cargo clippy --workspace --all-targets --locked -- -D warnings
-
-      - name: Test workspace
+      - name: Test workspace on Windows
         run: cargo test --workspace --all-targets --locked

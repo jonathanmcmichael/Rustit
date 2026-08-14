@@ -1,0 +1,56 @@
+{
+  "case": "relationship-types-and-offsets",
+  "time_basis": "working_hours_without_calendars",
+  "cases": [
+    {
+      "name": "finish-start",
+      "relationship": "finish_start",
+      "predecessor_duration": 8,
+      "successor_duration": 4,
+      "lag_hours": 0,
+      "expected_successor_early_start": 8,
+      "expected_successor_early_finish": 12,
+      "expected_project_duration": 12
+    },
+    {
+      "name": "start-start-positive-lag",
+      "relationship": "start_start",
+      "predecessor_duration": 8,
+      "successor_duration": 4,
+      "lag_hours": 2,
+      "expected_successor_early_start": 2,
+      "expected_successor_early_finish": 6,
+      "expected_project_duration": 8
+    },
+    {
+      "name": "finish-finish-positive-lag",
+      "relationship": "finish_finish",
+      "predecessor_duration": 8,
+      "successor_duration": 4,
+      "lag_hours": 2,
+      "expected_successor_early_start": 6,
+      "expected_successor_early_finish": 10,
+      "expected_project_duration": 10
+    },
+    {
+      "name": "start-finish-positive-lag",
+      "relationship": "start_finish",
+      "predecessor_duration": 8,
+      "successor_duration": 4,
+      "lag_hours": 10,
+      "expected_successor_early_start": 6,
+      "expected_successor_early_finish": 10,
+      "expected_project_duration": 10
+    },
+    {
+      "name": "finish-start-two-hour-lead",
+      "relationship": "finish_start",
+      "predecessor_duration": 8,
+      "successor_duration": 4,
+      "lag_hours": -2,
+      "expected_successor_early_start": 6,
+      "expected_successor_early_finish": 10,
+      "expected_project_duration": 10
+    }
+  ]
+}

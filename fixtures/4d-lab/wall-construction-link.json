@@ -1,0 +1,10 @@
+{
+  "case": "wall-construction-link",
+  "project_id": "00000000-0000-4000-8000-000000000201",
+  "level_id": "00000000-0000-4000-8000-000000000202",
+  "wall_id": "00000000-0000-4000-8000-000000000203",
+  "activity_id": "00000000-0000-4000-8000-000000000204",
+  "link_id": "00000000-0000-4000-8000-000000000205",
+  "role": "construct",
+  "expected_ifc_entity": "IfcRelAssignsToProcess"
+}

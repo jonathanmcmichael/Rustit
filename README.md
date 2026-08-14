@@ -41,6 +41,8 @@ cargo check --workspace --all-targets
 cargo test --workspace --all-targets
 ```
 
+Contributors can run the same complete gate as CI with `cargo xtask verify`. The smaller `cargo xtask labs` command executes the synthetic Wall, Schedule, 4D, IFC, and Sync truth fixtures.
+
 ## Workspace
 
 | Crate | Responsibility |
@@ -50,10 +52,12 @@ cargo test --workspace --all-targets
 | `rustit-ifc` | IFC schema target, rooted identity, entities, and classifications |
 | `rustit-model` | Semantic BIM authoring model (`Level`, `Wall`) |
 | `rustit-schedule` | Activities, relationships, and deterministic CPM |
+| `rustit-fixtures` | Executable synthetic truth labs for domain and interoperability behavior |
 | `rustit-core` | Unified project and vendor-independent 4D links |
 | `rustit-postgres` | PostgreSQL persistence interfaces and optimistic-version contract |
 | `rustit-adapters` | IFC, P6, OPC, SYNCHRO, and future adapter boundaries |
 | `rustit-app` | Native desktop shell and neutral-mesh GPU renderer |
+| `xtask` | One-command repository verification runner |
 
 The dependency direction is deliberate: domain crates know nothing about the windowing toolkit, PostgreSQL driver, or vendor APIs.
 

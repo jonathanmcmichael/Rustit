@@ -6,11 +6,14 @@ The scoreboard is a recurring maintainer snapshot of useful project evidence. Up
 
 | Evidence | Baseline |
 | --- | ---: |
-| Completed foundational pull requests | 4 |
-| Workspace tests | 28 |
+| Completed foundational pull requests | 6 after the truth-lab PR |
+| Workspace tests | 34, including 6 executable lab contracts |
 | Rendered semantic object types | 1 (`Wall`) |
 | Kernel graduation gates fully demonstrated | 1 of 8 |
-| Published starter work packets | 4 |
+| Synthetic truth labs | 5 |
+| Published AI-ready work packets | 18 |
+| Coordinated public challenges | 1 |
+| Required pull-request checks | 3 (Linux, Windows, dependency review) |
 | Active domain reviewers beyond bootstrap maintainer | 0 |
 
 ## What future updates should report
