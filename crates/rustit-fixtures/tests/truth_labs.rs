@@ -4,7 +4,9 @@ use rustit_core::{
 };
 use rustit_geometry::{GeometryKernel, Mesh, Point3, Segment3};
 use rustit_geometry_truck::TruckGeometryKernel;
-use rustit_ifc::{IfcEntity, IfcSchemaVersion};
+use rustit_ifc::{
+    ClassificationError, ClassificationReference, ClassificationSystem, IfcEntity, IfcSchemaVersion,
+};
 use rustit_model::{ElementId, Level, LevelId, Wall};
 use rustit_schedule::{
     Activity, ActivityId, ActivityRelationship, RelationshipType, Schedule, calculate_cpm,
@@ -14,6 +16,8 @@ use uuid::Uuid;
 
 const STRAIGHT_WALL: &str = include_str!("../../../fixtures/wall-lab/straight-wall-a.json");
 const INVALID_WALLS: &str = include_str!("../../../fixtures/wall-lab/invalid-walls.json");
+const CLASSIFICATION_PROVENANCE: &str =
+    include_str!("../../../fixtures/wall-lab/classification-provenance.json");
 const RELATIONSHIPS: &str = include_str!("../../../fixtures/schedule-lab/relationships.json");
 const WALL_4D_LINK: &str = include_str!("../../../fixtures/4d-lab/wall-construction-link.json");
 const IFC_MAPPING: &str = include_str!("../../../fixtures/ifc-lab/entity-mapping.json");
@@ -125,6 +129,46 @@ struct SyncFixture {
     expected_external_id: String,
 }
 
+#[derive(Debug, Deserialize)]
+struct ClassificationProvenanceFixture {
+    case: String,
+    units: String,
+    level_id: String,
+    wall_id: String,
+    baseline_start: [f64; 3],
+    baseline_end: [f64; 3],
+    thickness: f64,
+    height: f64,
+    references: Vec<FixtureClassification>,
+    duplicate_reference_index: usize,
+    expected_classification_count: usize,
+    blank_identification: String,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+struct FixtureClassification {
+    system: String,
+    edition: String,
+    identification: String,
+    name: String,
+}
+
+impl FixtureClassification {
+    fn into_reference(self) -> ClassificationReference {
+        match self.system.as_str() {
+            "MasterFormat" => {
+                ClassificationReference::master_format(self.edition, self.identification, self.name)
+                    .expect("valid MasterFormat fixture reference")
+            }
+            "UniFormat" => {
+                ClassificationReference::uni_format(self.edition, self.identification, self.name)
+                    .expect("valid UniFormat fixture reference")
+            }
+            other => panic!("fixture names unknown classification system {other}"),
+        }
+    }
+}
+
 #[test]
 fn wall_lab_matches_authored_dimensions_and_complete_mesh() {
     let fixture: StraightWallFixture = serde_json::from_str(STRAIGHT_WALL).expect("wall fixture");
@@ -167,6 +211,80 @@ fn wall_lab_rejects_each_named_invalid_case() {
         );
         assert!(result.is_err(), "{} should be rejected", case.name);
     }
+}
+
+#[test]
+fn wall_lab_retains_masterformat_and_uniformat_provenance_without_catalogs() {
+    let fixture: ClassificationProvenanceFixture =
+        serde_json::from_str(CLASSIFICATION_PROVENANCE).expect("classification provenance fixture");
+    assert_eq!(fixture.case, "carl-classification-provenance");
+    assert_eq!(fixture.units, "metres");
+    assert_eq!(fixture.references.len(), 2);
+
+    let mut wall = Wall::new(
+        LevelId::from_uuid(parse_uuid(&fixture.level_id)),
+        Segment3::new(point(fixture.baseline_start), point(fixture.baseline_end)),
+        fixture.thickness,
+        fixture.height,
+    )
+    .expect("fixture wall geometry");
+    wall.id = ElementId::from_uuid(parse_uuid(&fixture.wall_id));
+
+    for reference in fixture.references.clone() {
+        wall.add_classification(reference.into_reference());
+    }
+
+    let duplicate = fixture.references[fixture.duplicate_reference_index]
+        .clone()
+        .into_reference();
+    wall.add_classification(duplicate);
+
+    assert_eq!(
+        wall.classifications.len(),
+        fixture.expected_classification_count
+    );
+    assert_eq!(
+        wall.classifications[0].system,
+        ClassificationSystem::MasterFormat
+    );
+    assert_eq!(
+        wall.classifications[0].edition.as_deref(),
+        Some("project edition")
+    );
+    assert_eq!(wall.classifications[0].identification, "07 00 00");
+    assert_eq!(
+        wall.classifications[0].name.as_deref(),
+        Some("Thermal and Moisture Protection")
+    );
+    assert_eq!(
+        wall.classifications[1].system,
+        ClassificationSystem::UniFormat
+    );
+    assert_eq!(
+        wall.classifications[1].edition.as_deref(),
+        Some("project edition")
+    );
+    assert_eq!(wall.classifications[1].identification, "B2010");
+    assert_eq!(
+        wall.classifications[1].name.as_deref(),
+        Some("Exterior Walls")
+    );
+
+    assert_eq!(
+        ClassificationReference::new(
+            ClassificationSystem::MasterFormat,
+            Some("project edition".into()),
+            fixture.blank_identification,
+            Some("ignored".into()),
+        ),
+        Err(ClassificationError::EmptyIdentification)
+    );
+
+    let encoded = serde_json::to_string(&wall).expect("serialize classified wall");
+    let restored: Wall = serde_json::from_str(&encoded).expect("restore classified wall");
+    assert_eq!(restored.id, wall.id);
+    assert_eq!(restored.classifications, wall.classifications);
+    assert_eq!(restored.id.as_uuid(), parse_uuid(&fixture.wall_id));
 }
 
 #[test]
