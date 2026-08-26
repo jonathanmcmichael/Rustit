@@ -1,0 +1,28 @@
+{
+  "case": "carl-classification-provenance",
+  "description": "A wall retains small MasterFormat and UniFormat references with system, project-supplied edition, identification, and title — without bundling either catalog.",
+  "units": "metres",
+  "level_id": "00000000-0000-4000-8000-000000000201",
+  "wall_id": "00000000-0000-4000-8000-000000000202",
+  "baseline_start": [0.0, 0.0, 0.0],
+  "baseline_end": [6.0, 0.0, 0.0],
+  "thickness": 0.2,
+  "height": 3.0,
+  "references": [
+    {
+      "system": "MasterFormat",
+      "edition": "project edition",
+      "identification": "07 00 00",
+      "name": "Thermal and Moisture Protection"
+    },
+    {
+      "system": "UniFormat",
+      "edition": "project edition",
+      "identification": "B2010",
+      "name": "Exterior Walls"
+    }
+  ],
+  "duplicate_reference_index": 0,
+  "expected_classification_count": 2,
+  "blank_identification": "   "
+}
