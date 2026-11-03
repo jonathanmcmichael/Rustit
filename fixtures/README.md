@@ -6,7 +6,7 @@ These files are small, synthetic, MPL-2.0-licensed reference scenarios. They enc
 | --- | --- | --- |
 | Wall Lab | Princess Donut | Authored dimensions produce known bounds and 12 triangles; invalid dimensions are rejected |
 | Wall Lab | Carl classification provenance | A wall retains small MasterFormat and UniFormat references with edition-aware fields; duplicates collapse; blank identification is rejected |
-| Schedule Lab | Mordecai's tutorial | All four CPM relationship types and one lead produce known working-hour timings |
+| Schedule Lab | Mordecai's tutorial | All four CPM relationship types and one lead produce known working-hour timings; a cyclic network reports exactly its cycle members |
 | 4D Lab | The Royal Court | Stable element and activity identities form a vendor-neutral process assignment |
 | IFC Lab | Crawler semantics | Current Rustit semantic types map to the declared IFC 4.3 ADD2 entity families |
 | Sync Lab | Borant label | A canonical UUID remains separate from a vendor-owned external identifier |
