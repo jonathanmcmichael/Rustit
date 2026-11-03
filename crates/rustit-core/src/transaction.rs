@@ -434,7 +434,8 @@ impl ProjectSnapshot {
     }
 
     /// Atomically applies a preview if every touched object is still at its
-    /// base version and every referenced object still exists.
+    /// base version, every referenced object still exists, and no live object
+    /// still depends on an object it deletes.
     ///
     /// On any failure nothing is written and the head does not move.
     pub fn commit(&mut self, preview: Preview) -> Result<LogEntry, CommitError> {
@@ -464,6 +465,22 @@ impl ProjectSnapshot {
             if self.version(*object).is_none() {
                 conflicts.insert(*object);
             }
+        }
+        // A dependent committed after the preview (for example, a new link to
+        // a wall this transaction deletes) does not change the deleted
+        // object's version, so check deletions against the current state.
+        let deleted: BTreeSet<ObjectRef> = preview
+            .changes
+            .iter()
+            .filter(|change| change.after.is_none())
+            .map(|change| change.object)
+            .collect();
+        for object in &deleted {
+            conflicts.extend(
+                dependents(&self.project, *object)
+                    .into_iter()
+                    .filter(|dependent| !deleted.contains(dependent)),
+            );
         }
         if !conflicts.is_empty() {
             return Err(CommitError::Conflict {
@@ -618,15 +635,7 @@ fn apply_operation(
         Operation::DeleteLevel { id } => {
             let object = ObjectRef::Level(*id);
             ensure_exists(project, object)?;
-            ensure_no_dependents(
-                object,
-                project
-                    .model
-                    .walls
-                    .iter()
-                    .filter(|wall| wall.level_id == *id)
-                    .map(|wall| ObjectRef::Wall(wall.id)),
-            )?;
+            ensure_no_dependents(project, object)?;
             project.model.levels.retain(|level| level.id != *id);
             Ok(Effects::changed(object))
         }
@@ -656,14 +665,7 @@ fn apply_operation(
         Operation::DeleteWall { id } => {
             let object = ObjectRef::Wall(*id);
             ensure_exists(project, object)?;
-            ensure_no_dependents(
-                object,
-                project
-                    .element_activity_links
-                    .iter()
-                    .filter(|link| link.element_id == *id)
-                    .map(|link| ObjectRef::Link(link.id)),
-            )?;
+            ensure_no_dependents(project, object)?;
             project.model.walls.retain(|wall| wall.id != *id);
             Ok(Effects::changed(object))
         }
@@ -688,20 +690,7 @@ fn apply_operation(
         Operation::DeleteActivity { id } => {
             let object = ObjectRef::Activity(*id);
             ensure_exists(project, object)?;
-            let relationships = project
-                .schedule
-                .relationships
-                .iter()
-                .filter(|relationship| {
-                    relationship.predecessor_id == *id || relationship.successor_id == *id
-                })
-                .map(|relationship| ObjectRef::Relationship(relationship.id));
-            let links = project
-                .element_activity_links
-                .iter()
-                .filter(|link| link.activity_id == *id)
-                .map(|link| ObjectRef::Link(link.id));
-            ensure_no_dependents(object, relationships.chain(links))?;
+            ensure_no_dependents(project, object)?;
             project
                 .schedule
                 .activities
@@ -762,11 +751,8 @@ fn ensure_exists(project: &Project, object: ObjectRef) -> Result<(), OperationEr
 
 /// No implicit cascades: deletion is rejected while anything depends on the
 /// object, and dependents must be removed explicitly first.
-fn ensure_no_dependents(
-    object: ObjectRef,
-    dependents: impl Iterator<Item = ObjectRef>,
-) -> Result<(), OperationError> {
-    let dependents: BTreeSet<ObjectRef> = dependents.collect();
+fn ensure_no_dependents(project: &Project, object: ObjectRef) -> Result<(), OperationError> {
+    let dependents = dependents(project, object);
     if dependents.is_empty() {
         Ok(())
     } else {
@@ -774,6 +760,46 @@ fn ensure_no_dependents(
             object,
             dependents: dependents.into_iter().collect(),
         })
+    }
+}
+
+/// Live objects that reference `object`, in deterministic order.
+///
+/// This is the single statement of the reference graph: walls reference
+/// levels; relationships reference activities; links reference walls and
+/// activities.
+fn dependents(project: &Project, object: ObjectRef) -> BTreeSet<ObjectRef> {
+    match object {
+        ObjectRef::Project(_) | ObjectRef::Relationship(_) | ObjectRef::Link(_) => BTreeSet::new(),
+        ObjectRef::Level(id) => project
+            .model
+            .walls
+            .iter()
+            .filter(|wall| wall.level_id == id)
+            .map(|wall| ObjectRef::Wall(wall.id))
+            .collect(),
+        ObjectRef::Wall(id) => project
+            .element_activity_links
+            .iter()
+            .filter(|link| link.element_id == id)
+            .map(|link| ObjectRef::Link(link.id))
+            .collect(),
+        ObjectRef::Activity(id) => project
+            .schedule
+            .relationships
+            .iter()
+            .filter(|relationship| {
+                relationship.predecessor_id == id || relationship.successor_id == id
+            })
+            .map(|relationship| ObjectRef::Relationship(relationship.id))
+            .chain(
+                project
+                    .element_activity_links
+                    .iter()
+                    .filter(|link| link.activity_id == id)
+                    .map(|link| ObjectRef::Link(link.id)),
+            )
+            .collect(),
     }
 }
 
@@ -1107,6 +1133,46 @@ mod tests {
             })
         );
         assert_eq!(snapshot.head(), LogSequence(2));
+    }
+
+    /// The mirror of reference survival: a link committed after a delete was
+    /// previewed must block the delete, even though the wall's own version did
+    /// not change. Otherwise the link would dangle.
+    #[test]
+    fn a_dependent_committed_after_a_delete_preview_conflicts() {
+        let (mut snapshot, level) = base();
+        let wall = Wall::new(level.id, segment(5.0), 0.2, 3.0).expect("wall");
+        let activity = Activity::new("Carl frames wall", 8);
+        commit(
+            &mut snapshot,
+            vec![
+                Operation::CreateWall(wall.clone()),
+                Operation::CreateActivity(activity.clone()),
+            ],
+        );
+        let delete_preview = snapshot
+            .preview(Proposal::new(
+                carl(),
+                "Remove wall",
+                vec![Operation::DeleteWall { id: wall.id }],
+            ))
+            .expect("valid while unlinked");
+        let link = ElementActivityLink::new(wall.id, activity.id, ElementActivityRole::Construct);
+        commit(
+            &mut snapshot,
+            vec![Operation::LinkElementActivity(link.clone())],
+        );
+
+        assert_eq!(
+            snapshot.commit(delete_preview),
+            Err(CommitError::Conflict {
+                objects: vec![ObjectRef::Link(link.id)]
+            })
+        );
+        assert_eq!(
+            snapshot.version(ObjectRef::Wall(wall.id)),
+            Some(ObjectVersion(1))
+        );
     }
 
     #[test]
