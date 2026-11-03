@@ -15,7 +15,7 @@ pub mod transaction;
 pub use transaction::{
     Actor, ActorKind, CommitError, Diagnostic, Domain, LogEntry, LogSequence, ObjectChange,
     ObjectRef, ObjectState, ObjectVersion, Operation, OperationError, Preview, ProjectSnapshot,
-    Proposal, Rejection, TransactionId,
+    Proposal, Rejection, ReplayError, TransactionId, UndoError,
 };
 
 macro_rules! stable_id {

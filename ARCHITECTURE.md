@@ -47,7 +47,7 @@ Defines `Activity` (`IfcTask`), `ActivityRelationship` (`IfcRelSequence`), relat
 
 Defines `Project` (`IfcProject`) as the aggregate joining a BIM model, schedule, and `ElementActivityLink` collection. The link aligns with `IfcRelAssignsToProcess`; this is where vendor-independent 4D exists.
 
-The `transaction` module implements RFC 0004 in memory: typed `Operation`s form a `Proposal`; `ProjectSnapshot::preview` validates it into an object-level change set without writing; `ProjectSnapshot::commit` applies it only if every touched object is still at its base version, then returns a `LogEntry`. Model, schedule, and link objects are versioned independently.
+The `transaction` module implements RFC 0004 in memory: typed `Operation`s form a `Proposal`; `ProjectSnapshot::preview` validates it into an object-level change set without writing; `ProjectSnapshot::commit` applies it only if every touched object is still at its base version, then returns a `LogEntry`. `ProjectSnapshot::replay` rebuilds a snapshot from its genesis project and log, and `ProjectSnapshot::undo` builds a compensating preview from an earlier entry. Model, schedule, and link objects are versioned independently.
 
 ### `rustit-postgres`
 

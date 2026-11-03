@@ -10,7 +10,7 @@ These files are small, synthetic, MPL-2.0-licensed reference scenarios. They enc
 | 4D Lab | The Royal Court | Stable element and activity identities form a vendor-neutral process assignment |
 | IFC Lab | Crawler semantics | Current Rustit semantic types map to the declared IFC 4.3 ADD2 entity families |
 | Sync Lab | Borant label | A canonical UUID remains separate from a vendor-owned external identifier |
-| Transaction Lab | Safe Room | Disjoint model and schedule edits both commit; overlapping edits conflict on exactly the shared object; invalid proposals and implicit cascades are rejected atomically (RFC 0004) |
+| Transaction Lab | Safe Room | Disjoint model and schedule edits both commit; overlapping edits conflict on exactly the shared object; invalid proposals and implicit cascades are rejected atomically; the log replays to the identical snapshot; undo restores prior states, including tombstones, and conflicts after later edits (RFC 0004) |
 
 Classification provenance details and licensing limits: [`wall-lab/README.md`](wall-lab/README.md).
 

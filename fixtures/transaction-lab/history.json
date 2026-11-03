@@ -1,0 +1,59 @@
+{
+  "case": "safe-room-history",
+  "rfc": "0004",
+  "units": "metres_and_working_hours",
+  "notes": [
+    "Every scenario starts from the same genesis project: one level, wall W (6 m x 0.2 m x 3.0 m), activity A (8 h), activity B (4 h), and no links. Every object is at version 1 and the head is 0.",
+    "Reference survival: a link from W to A is previewed, A is then deleted, and the link commit conflicts on A.",
+    "Replay: four commits touch the model, schedule, and 4D domains. Replaying the log onto the genesis project reproduces the live snapshot exactly. A gap or a tampered base version is rejected.",
+    "Undo: undoing a height change restores 3.0 m at a new sequence. Undoing it again after another edit conflicts on W. Undoing an unlink-and-delete restores both objects from their tombstones, unless a restored object references something deleted since."
+  ],
+  "project_id": "00000000-0000-4000-8000-000000000601",
+  "level_id": "00000000-0000-4000-8000-000000000602",
+  "wall_id": "00000000-0000-4000-8000-000000000603",
+  "activity_a_id": "00000000-0000-4000-8000-000000000604",
+  "activity_b_id": "00000000-0000-4000-8000-000000000605",
+  "relationship_id": "00000000-0000-4000-8000-000000000606",
+  "link_id": "00000000-0000-4000-8000-000000000607",
+  "wall_baseline_start": [0.0, 0.0, 0.0],
+  "wall_baseline_end": [6.0, 0.0, 0.0],
+  "wall_thickness": 0.2,
+  "wall_height": 3.0,
+  "activity_a_duration_hours": 8,
+  "activity_b_duration_hours": 4,
+  "reference_survival": {
+    "expected_conflicts": [{ "kind": "activity", "id": "00000000-0000-4000-8000-000000000604" }],
+    "expected_head": 1
+  },
+  "replay": {
+    "raised_wall_height": 3.2,
+    "revised_activity_b_duration_hours": 6,
+    "expected_head": 4,
+    "expected_domains": [["model"], ["schedule", "four_d"], ["schedule"], ["four_d"]],
+    "expected_live_versions": [
+      { "kind": "wall", "id": "00000000-0000-4000-8000-000000000603", "version": 2 },
+      { "kind": "activity", "id": "00000000-0000-4000-8000-000000000604", "version": 1 },
+      { "kind": "activity", "id": "00000000-0000-4000-8000-000000000605", "version": 2 },
+      { "kind": "relationship", "id": "00000000-0000-4000-8000-000000000606", "version": 1 }
+    ],
+    "expected_link_tombstone_version": 2,
+    "gap_expected_sequence": 2,
+    "gap_found_sequence": 3,
+    "tampered_base_version": 7,
+    "tampered_conflicts": [{ "kind": "wall", "id": "00000000-0000-4000-8000-000000000603" }]
+  },
+  "undo": {
+    "raised_wall_height": 3.2,
+    "restored_wall_height": 3.0,
+    "expected_undo_sequence": 2,
+    "expected_wall_version_after_undo": 3,
+    "later_wall_height": 3.5,
+    "expected_repeat_undo_conflicts": [{ "kind": "wall", "id": "00000000-0000-4000-8000-000000000603" }],
+    "expected_restore_change_order": [
+      { "kind": "wall", "id": "00000000-0000-4000-8000-000000000603" },
+      { "kind": "link", "id": "00000000-0000-4000-8000-000000000607" }
+    ],
+    "expected_restored_version": 3,
+    "expected_blocked_restore_conflicts": [{ "kind": "activity", "id": "00000000-0000-4000-8000-000000000604" }]
+  }
+}
