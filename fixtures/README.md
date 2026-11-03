@@ -8,6 +8,7 @@ These files are small, synthetic, MPL-2.0-licensed reference scenarios. They enc
 | Wall Lab | Carl classification provenance | A wall retains small MasterFormat and UniFormat references with edition-aware fields; duplicates collapse; blank identification is rejected |
 | Schedule Lab | Mordecai's tutorial | All four CPM relationship types and one lead produce known working-hour timings |
 | 4D Lab | The Royal Court | Stable element and activity identities form a vendor-neutral process assignment |
+| 4D Lab | The Royal Court renovation | A demolish, temporary, construct, and inspect sequence produces hand-calculated element states at each change hour |
 | IFC Lab | Crawler semantics | Current Rustit semantic types map to the declared IFC 4.3 ADD2 entity families |
 | Sync Lab | Borant label | A canonical UUID remains separate from a vendor-owned external identifier |
 

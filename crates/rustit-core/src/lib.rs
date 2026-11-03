@@ -10,6 +10,10 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
 
+pub mod four_d;
+
+pub use four_d::{DateBasis, ElementPresence, ElementState, FourDError, FourDTimeline};
+
 macro_rules! stable_id {
     ($name:ident) => {
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
