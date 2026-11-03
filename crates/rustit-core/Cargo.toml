@@ -9,6 +9,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+rustit-geometry = { path = "../rustit-geometry" }
 rustit-ifc = { path = "../rustit-ifc" }
 rustit-model = { path = "../rustit-model" }
 rustit-schedule = { path = "../rustit-schedule" }
@@ -17,4 +18,4 @@ thiserror.workspace = true
 uuid.workspace = true
 
 [dev-dependencies]
-rustit-geometry = { path = "../rustit-geometry" }
+serde_json.workspace = true
