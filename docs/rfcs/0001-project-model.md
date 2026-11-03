@@ -83,6 +83,8 @@ Application code saves and loads `Project` through a repository port. The first 
 
 Optimistic project versions form the initial concurrency boundary. Transactions, object history, branches, and merging require dedicated design before implementation.
 
+> **Superseded in part by [RFC 0004](0004-transactions-and-change-log.md):** typed transactions, per-object versions, and an append-only change log replace whole-project optimistic versions as the concurrency boundary. Branches and merging remain open.
+
 ### Adapters
 
 Schedule systems implement `ScheduleAdapter`; IFC physical files and other model interchange mechanisms implement `ModelAdapter`. Import produces canonical objects plus identity mappings and warnings. Export is split into planning and application so callers can review changes before an external write.

@@ -1,0 +1,46 @@
+{
+  "case": "mordecai-cyclic-network-diagnostic",
+  "time_basis": "working_hours_without_calendars",
+  "notes": [
+    "Form, reinforce, and pour form a finish-start loop: form -> reinforce -> pour -> form.",
+    "Strip forms follows pour, so it is blocked by the loop but is not a member of it.",
+    "Site survey has no relationships and is independent.",
+    "The diagnostic reports exactly one cycle: form, reinforce, and pour, sorted by UUID."
+  ],
+  "activities": [
+    { "id": "00000000-0000-4000-8000-000000000403", "name": "Pour CIP wall", "duration_hours": 8 },
+    { "id": "00000000-0000-4000-8000-000000000401", "name": "Form CIP wall", "duration_hours": 24 },
+    { "id": "00000000-0000-4000-8000-000000000405", "name": "Strip wall forms", "duration_hours": 8 },
+    { "id": "00000000-0000-4000-8000-000000000402", "name": "Place wall reinforcing", "duration_hours": 16 },
+    { "id": "00000000-0000-4000-8000-000000000404", "name": "Site survey", "duration_hours": 4 }
+  ],
+  "relationships": [
+    {
+      "predecessor_id": "00000000-0000-4000-8000-000000000401",
+      "successor_id": "00000000-0000-4000-8000-000000000402"
+    },
+    {
+      "predecessor_id": "00000000-0000-4000-8000-000000000402",
+      "successor_id": "00000000-0000-4000-8000-000000000403"
+    },
+    {
+      "predecessor_id": "00000000-0000-4000-8000-000000000403",
+      "successor_id": "00000000-0000-4000-8000-000000000401"
+    },
+    {
+      "predecessor_id": "00000000-0000-4000-8000-000000000403",
+      "successor_id": "00000000-0000-4000-8000-000000000405"
+    }
+  ],
+  "expected_cycles": [
+    [
+      "00000000-0000-4000-8000-000000000401",
+      "00000000-0000-4000-8000-000000000402",
+      "00000000-0000-4000-8000-000000000403"
+    ]
+  ],
+  "expected_excluded": [
+    "00000000-0000-4000-8000-000000000404",
+    "00000000-0000-4000-8000-000000000405"
+  ]
+}
