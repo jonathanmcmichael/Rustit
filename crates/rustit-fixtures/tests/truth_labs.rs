@@ -1,6 +1,7 @@
 use rustit_adapters::{ExternalIdentity, ExternalSystem};
 use rustit_core::{
-    ElementActivityLink, ElementActivityLinkId, ElementActivityRole, Project, ProjectId,
+    DateBasis, ElementActivityLink, ElementActivityLinkId, ElementActivityRole, ElementPresence,
+    FourDTimeline, Project, ProjectId,
 };
 use rustit_geometry::{GeometryKernel, Mesh, Point3, Segment3};
 use rustit_geometry_truck::TruckGeometryKernel;
@@ -9,7 +10,8 @@ use rustit_ifc::{
 };
 use rustit_model::{ElementId, Level, LevelId, Wall};
 use rustit_schedule::{
-    Activity, ActivityId, ActivityRelationship, RelationshipType, Schedule, calculate_cpm,
+    Activity, ActivityId, ActivityRelationship, ActivityRelationshipId, RelationshipType, Schedule,
+    calculate_cpm,
 };
 use serde::Deserialize;
 use uuid::Uuid;
@@ -20,6 +22,7 @@ const CLASSIFICATION_PROVENANCE: &str =
     include_str!("../../../fixtures/wall-lab/classification-provenance.json");
 const RELATIONSHIPS: &str = include_str!("../../../fixtures/schedule-lab/relationships.json");
 const WALL_4D_LINK: &str = include_str!("../../../fixtures/4d-lab/wall-construction-link.json");
+const RENOVATION_4D: &str = include_str!("../../../fixtures/4d-lab/renovation-state-at-time.json");
 const IFC_MAPPING: &str = include_str!("../../../fixtures/ifc-lab/entity-mapping.json");
 const P6_IDENTITY: &str = include_str!("../../../fixtures/sync-lab/p6-external-identity.json");
 
@@ -103,6 +106,117 @@ struct FourDFixture {
     link_id: String,
     role: String,
     expected_ifc_entity: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct RenovationFixture {
+    case: String,
+    time_basis: String,
+    date_basis: String,
+    interval_convention: String,
+    level_id: String,
+    wall_thickness: f64,
+    wall_height: f64,
+    walls: Vec<RenovationWall>,
+    activities: Vec<RenovationActivity>,
+    relationships: Vec<RenovationRelationship>,
+    links: Vec<RenovationLink>,
+    expected_project_duration: i64,
+    expected_change_hours: Vec<i64>,
+    snapshots: Vec<RenovationSnapshot>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RenovationWall {
+    name: String,
+    id: String,
+    baseline_start: [f64; 3],
+    baseline_end: [f64; 3],
+}
+
+#[derive(Debug, Deserialize)]
+struct RenovationActivity {
+    id: String,
+    name: String,
+    duration_hours: u32,
+}
+
+#[derive(Debug, Deserialize)]
+struct RenovationRelationship {
+    id: String,
+    predecessor_id: String,
+    successor_id: String,
+    relationship: FixtureRelationship,
+    lag_hours: i32,
+}
+
+#[derive(Debug, Deserialize)]
+struct RenovationLink {
+    id: String,
+    element_id: String,
+    activity_id: String,
+    role: FixtureRole,
+}
+
+#[derive(Debug, Deserialize)]
+struct RenovationSnapshot {
+    hour: i64,
+    states: Vec<RenovationState>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RenovationState {
+    element_id: String,
+    presence: FixturePresence,
+    active_links: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum FixtureRole {
+    Construct,
+    Demolish,
+    Temporary,
+    Inspect,
+}
+
+impl From<FixtureRole> for ElementActivityRole {
+    fn from(value: FixtureRole) -> Self {
+        match value {
+            FixtureRole::Construct => Self::Construct,
+            FixtureRole::Demolish => Self::Demolish,
+            FixtureRole::Temporary => Self::Temporary,
+            FixtureRole::Inspect => Self::Inspect,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum FixturePresence {
+    Unscheduled,
+    Planned,
+    UnderConstruction,
+    Built,
+    Existing,
+    UnderDemolition,
+    Temporary,
+    Removed,
+}
+
+impl From<FixturePresence> for ElementPresence {
+    fn from(value: FixturePresence) -> Self {
+        match value {
+            FixturePresence::Unscheduled => Self::Unscheduled,
+            FixturePresence::Planned => Self::Planned,
+            FixturePresence::UnderConstruction => Self::UnderConstruction,
+            FixturePresence::Built => Self::Built,
+            FixturePresence::Existing => Self::Existing,
+            FixturePresence::UnderDemolition => Self::UnderDemolition,
+            FixturePresence::Temporary => Self::Temporary,
+            FixturePresence::Removed => Self::Removed,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -445,6 +559,125 @@ fn four_d_lab_preserves_all_stable_ids_in_a_vendor_neutral_link() {
     assert_eq!(link.activity_id.as_uuid(), parse_uuid(&fixture.activity_id));
     assert_eq!(link.id.as_uuid(), parse_uuid(&fixture.link_id));
     assert_eq!(link.ifc_entity().schema_name(), fixture.expected_ifc_entity);
+}
+
+#[test]
+fn four_d_lab_matches_hand_calculated_renovation_states() {
+    let fixture: RenovationFixture =
+        serde_json::from_str(RENOVATION_4D).expect("renovation 4D fixture");
+    assert_eq!(fixture.case, "royal-court-renovation-sequence");
+    assert_eq!(fixture.time_basis, "working_hours_without_calendars");
+    assert_eq!(fixture.date_basis, "early");
+    assert_eq!(
+        fixture.interval_convention,
+        "half_open_start_inclusive_finish_exclusive"
+    );
+
+    let mut project = Project::new("The Royal Court renovation 4D Lab");
+    let mut level = Level::new("Dungeon Floor 1", 0.0);
+    level.id = LevelId::from_uuid(parse_uuid(&fixture.level_id));
+    let level_id = level.id;
+    project.model.add_level(level).expect("fixture level");
+
+    for fixture_wall in &fixture.walls {
+        let mut wall = Wall::new(
+            level_id,
+            Segment3::new(
+                point(fixture_wall.baseline_start),
+                point(fixture_wall.baseline_end),
+            ),
+            fixture.wall_thickness,
+            fixture.wall_height,
+        )
+        .unwrap_or_else(|error| panic!("{} wall: {error}", fixture_wall.name));
+        wall.id = ElementId::from_uuid(parse_uuid(&fixture_wall.id));
+        project.model.add_wall(wall).expect("fixture wall");
+    }
+    for fixture_activity in &fixture.activities {
+        let mut activity = Activity::new(&fixture_activity.name, fixture_activity.duration_hours);
+        activity.id = ActivityId::from_uuid(parse_uuid(&fixture_activity.id));
+        project
+            .schedule
+            .add_activity(activity)
+            .expect("fixture activity");
+    }
+    for fixture_relationship in fixture.relationships {
+        let mut relationship = ActivityRelationship::new(
+            ActivityId::from_uuid(parse_uuid(&fixture_relationship.predecessor_id)),
+            ActivityId::from_uuid(parse_uuid(&fixture_relationship.successor_id)),
+            fixture_relationship.relationship.into(),
+            fixture_relationship.lag_hours,
+        );
+        relationship.id = ActivityRelationshipId::from_uuid(parse_uuid(&fixture_relationship.id));
+        project
+            .schedule
+            .add_relationship(relationship)
+            .expect("fixture relationship");
+    }
+    for fixture_link in fixture.links {
+        let mut link = ElementActivityLink::new(
+            ElementId::from_uuid(parse_uuid(&fixture_link.element_id)),
+            ActivityId::from_uuid(parse_uuid(&fixture_link.activity_id)),
+            fixture_link.role.into(),
+        );
+        link.id = ElementActivityLinkId::from_uuid(parse_uuid(&fixture_link.id));
+        project
+            .link_element_activity(link)
+            .expect("fixture 4D link");
+    }
+
+    let cpm = calculate_cpm(&project.schedule).expect("fixture schedule");
+    assert_eq!(
+        cpm.project_duration_hours,
+        fixture.expected_project_duration
+    );
+
+    let timeline = FourDTimeline::build(&project, &cpm, DateBasis::Early).expect("4D timeline");
+    assert_eq!(
+        timeline.change_hours(),
+        fixture.expected_change_hours.as_slice()
+    );
+
+    for snapshot in fixture.snapshots {
+        let states = timeline.state_at(snapshot.hour);
+        assert_eq!(
+            states.len(),
+            snapshot.states.len(),
+            "hour {} element count",
+            snapshot.hour
+        );
+        for (actual, expected) in states.iter().zip(snapshot.states) {
+            assert_eq!(
+                actual.element_id.as_uuid(),
+                parse_uuid(&expected.element_id),
+                "hour {} element order",
+                snapshot.hour
+            );
+            assert_eq!(
+                actual.presence,
+                ElementPresence::from(expected.presence),
+                "hour {} presence of {}",
+                snapshot.hour,
+                expected.element_id
+            );
+            let expected_links: Vec<Uuid> = expected
+                .active_links
+                .iter()
+                .map(|id| parse_uuid(id))
+                .collect();
+            let actual_links: Vec<Uuid> =
+                actual.active_links.iter().map(|id| id.as_uuid()).collect();
+            assert_eq!(
+                actual_links, expected_links,
+                "hour {} active links of {}",
+                snapshot.hour, expected.element_id
+            );
+        }
+    }
+
+    // Rebuilding from the same inputs yields an identical timeline.
+    let repeat = FourDTimeline::build(&project, &cpm, DateBasis::Early).expect("repeat timeline");
+    assert_eq!(repeat, timeline);
 }
 
 #[test]

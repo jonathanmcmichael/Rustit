@@ -1,0 +1,163 @@
+{
+  "case": "royal-court-renovation-sequence",
+  "time_basis": "working_hours_without_calendars",
+  "date_basis": "early",
+  "interval_convention": "half_open_start_inclusive_finish_exclusive",
+  "notes": [
+    "Temporary dust partition is maintained for the full renovation: 32 h, no predecessors, ES 0, EF 32.",
+    "Demolition starts 4 h after the dust partition goes up: SS + 4 h lag, 8 h, ES 4, EF 12.",
+    "Framing follows demolition: FS, 16 h, ES 12, EF 28.",
+    "Inspection follows framing: FS, 4 h, ES 28, EF 32. Project duration is 32 h.",
+    "The corridor wall has no links, so it is unscheduled at every hour.",
+    "Change hours are the distinct starts and finishes of linked activities: 0, 4, 12, 28, 32."
+  ],
+  "level_id": "00000000-0000-4000-8000-000000000301",
+  "wall_thickness": 0.2,
+  "wall_height": 3.0,
+  "walls": [
+    {
+      "name": "existing-partition",
+      "id": "00000000-0000-4000-8000-000000000311",
+      "baseline_start": [0.0, 0.0, 0.0],
+      "baseline_end": [4.0, 0.0, 0.0]
+    },
+    {
+      "name": "new-wall",
+      "id": "00000000-0000-4000-8000-000000000312",
+      "baseline_start": [0.0, 2.0, 0.0],
+      "baseline_end": [4.0, 2.0, 0.0]
+    },
+    {
+      "name": "temporary-dust-partition",
+      "id": "00000000-0000-4000-8000-000000000313",
+      "baseline_start": [0.0, 4.0, 0.0],
+      "baseline_end": [4.0, 4.0, 0.0]
+    },
+    {
+      "name": "corridor-wall",
+      "id": "00000000-0000-4000-8000-000000000314",
+      "baseline_start": [0.0, 6.0, 0.0],
+      "baseline_end": [4.0, 6.0, 0.0]
+    }
+  ],
+  "activities": [
+    {
+      "id": "00000000-0000-4000-8000-000000000321",
+      "name": "Maintain temporary dust partition",
+      "duration_hours": 32
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000322",
+      "name": "Mongo demolishes existing partition",
+      "duration_hours": 8
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000323",
+      "name": "Carl frames new wall",
+      "duration_hours": 16
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000324",
+      "name": "Mordecai inspects new wall framing",
+      "duration_hours": 4
+    }
+  ],
+  "relationships": [
+    {
+      "id": "00000000-0000-4000-8000-000000000331",
+      "predecessor_id": "00000000-0000-4000-8000-000000000321",
+      "successor_id": "00000000-0000-4000-8000-000000000322",
+      "relationship": "start_start",
+      "lag_hours": 4
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000332",
+      "predecessor_id": "00000000-0000-4000-8000-000000000322",
+      "successor_id": "00000000-0000-4000-8000-000000000323",
+      "relationship": "finish_start",
+      "lag_hours": 0
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000333",
+      "predecessor_id": "00000000-0000-4000-8000-000000000323",
+      "successor_id": "00000000-0000-4000-8000-000000000324",
+      "relationship": "finish_start",
+      "lag_hours": 0
+    }
+  ],
+  "links": [
+    {
+      "id": "00000000-0000-4000-8000-000000000341",
+      "element_id": "00000000-0000-4000-8000-000000000313",
+      "activity_id": "00000000-0000-4000-8000-000000000321",
+      "role": "temporary"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000342",
+      "element_id": "00000000-0000-4000-8000-000000000311",
+      "activity_id": "00000000-0000-4000-8000-000000000322",
+      "role": "demolish"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000343",
+      "element_id": "00000000-0000-4000-8000-000000000312",
+      "activity_id": "00000000-0000-4000-8000-000000000323",
+      "role": "construct"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000344",
+      "element_id": "00000000-0000-4000-8000-000000000312",
+      "activity_id": "00000000-0000-4000-8000-000000000324",
+      "role": "inspect"
+    }
+  ],
+  "expected_project_duration": 32,
+  "expected_change_hours": [0, 4, 12, 28, 32],
+  "snapshots": [
+    {
+      "hour": 0,
+      "states": [
+        { "element_id": "00000000-0000-4000-8000-000000000311", "presence": "existing", "active_links": [] },
+        { "element_id": "00000000-0000-4000-8000-000000000312", "presence": "planned", "active_links": [] },
+        { "element_id": "00000000-0000-4000-8000-000000000313", "presence": "temporary", "active_links": ["00000000-0000-4000-8000-000000000341"] },
+        { "element_id": "00000000-0000-4000-8000-000000000314", "presence": "unscheduled", "active_links": [] }
+      ]
+    },
+    {
+      "hour": 4,
+      "states": [
+        { "element_id": "00000000-0000-4000-8000-000000000311", "presence": "under_demolition", "active_links": ["00000000-0000-4000-8000-000000000342"] },
+        { "element_id": "00000000-0000-4000-8000-000000000312", "presence": "planned", "active_links": [] },
+        { "element_id": "00000000-0000-4000-8000-000000000313", "presence": "temporary", "active_links": ["00000000-0000-4000-8000-000000000341"] },
+        { "element_id": "00000000-0000-4000-8000-000000000314", "presence": "unscheduled", "active_links": [] }
+      ]
+    },
+    {
+      "hour": 12,
+      "states": [
+        { "element_id": "00000000-0000-4000-8000-000000000311", "presence": "removed", "active_links": [] },
+        { "element_id": "00000000-0000-4000-8000-000000000312", "presence": "under_construction", "active_links": ["00000000-0000-4000-8000-000000000343"] },
+        { "element_id": "00000000-0000-4000-8000-000000000313", "presence": "temporary", "active_links": ["00000000-0000-4000-8000-000000000341"] },
+        { "element_id": "00000000-0000-4000-8000-000000000314", "presence": "unscheduled", "active_links": [] }
+      ]
+    },
+    {
+      "hour": 28,
+      "states": [
+        { "element_id": "00000000-0000-4000-8000-000000000311", "presence": "removed", "active_links": [] },
+        { "element_id": "00000000-0000-4000-8000-000000000312", "presence": "built", "active_links": ["00000000-0000-4000-8000-000000000344"] },
+        { "element_id": "00000000-0000-4000-8000-000000000313", "presence": "temporary", "active_links": ["00000000-0000-4000-8000-000000000341"] },
+        { "element_id": "00000000-0000-4000-8000-000000000314", "presence": "unscheduled", "active_links": [] }
+      ]
+    },
+    {
+      "hour": 32,
+      "states": [
+        { "element_id": "00000000-0000-4000-8000-000000000311", "presence": "removed", "active_links": [] },
+        { "element_id": "00000000-0000-4000-8000-000000000312", "presence": "built", "active_links": [] },
+        { "element_id": "00000000-0000-4000-8000-000000000313", "presence": "removed", "active_links": [] },
+        { "element_id": "00000000-0000-4000-8000-000000000314", "presence": "unscheduled", "active_links": [] }
+      ]
+    }
+  ]
+}
