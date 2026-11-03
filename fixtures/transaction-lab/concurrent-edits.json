@@ -1,0 +1,56 @@
+{
+  "case": "safe-room-concurrent-edits",
+  "rfc": "0004",
+  "units": "metres_and_working_hours",
+  "notes": [
+    "Every scenario starts from the same genesis project: one level, wall W (6 m x 0.2 m x 3.0 m), activity A (8 h), and link K constructing W by A.",
+    "Genesis puts every object at version 1 and the log head at 0.",
+    "Separated edits: a modeler and a scheduler preview against the same genesis state. Their changes touch disjoint objects, so both commit.",
+    "Overlapping edits: two proposals change W's height from the same base. The first commits; the second conflicts on W alone and writes nothing.",
+    "Atomic rejection: the third operation sets a negative height, so the whole proposal is rejected at index 2 and the project is unchanged.",
+    "No cascades: deleting W while K references it is rejected. Unlinking K and then deleting W in one transaction succeeds."
+  ],
+  "project_id": "00000000-0000-4000-8000-000000000501",
+  "level_id": "00000000-0000-4000-8000-000000000502",
+  "wall_id": "00000000-0000-4000-8000-000000000503",
+  "activity_id": "00000000-0000-4000-8000-000000000504",
+  "link_id": "00000000-0000-4000-8000-000000000505",
+  "wall_baseline_start": [0.0, 0.0, 0.0],
+  "wall_baseline_end": [6.0, 0.0, 0.0],
+  "wall_thickness": 0.2,
+  "wall_height": 3.0,
+  "activity_duration_hours": 8,
+  "separated_edits": {
+    "modeler_wall_height": 3.2,
+    "scheduler_activity_duration_hours": 12,
+    "expected_head": 2,
+    "expected_wall_version": 2,
+    "expected_activity_version": 2,
+    "expected_link_version": 1,
+    "expected_domains": [["model"], ["schedule"]]
+  },
+  "overlapping_edits": {
+    "first_wall_height": 3.4,
+    "second_wall_height": 2.8,
+    "expected_conflicts": [{ "kind": "wall", "id": "00000000-0000-4000-8000-000000000503" }],
+    "expected_wall_height": 3.4,
+    "expected_wall_version": 2,
+    "expected_head": 1
+  },
+  "atomic_rejection": {
+    "activity_duration_hours": 16,
+    "valid_wall_height": 3.6,
+    "invalid_wall_height": -1.0,
+    "expected_rejected_operation_index": 2
+  },
+  "no_cascades": {
+    "expected_dependents": [{ "kind": "link", "id": "00000000-0000-4000-8000-000000000505" }],
+    "expected_change_order": [
+      { "kind": "link", "id": "00000000-0000-4000-8000-000000000505" },
+      { "kind": "wall", "id": "00000000-0000-4000-8000-000000000503" }
+    ],
+    "expected_head": 1,
+    "expected_wall_tombstone_version": 2,
+    "expected_link_tombstone_version": 2
+  }
+}

@@ -531,3 +531,339 @@ fn assert_point(actual: Point3, expected: [f64; 3]) {
     assert!((actual.y - expected[1]).abs() < EPSILON);
     assert!((actual.z - expected[2]).abs() < EPSILON);
 }
+
+/// RFC 0004 acceptance fixtures 1–4: separated edits, overlapping edits,
+/// atomic rejection, and no implicit cascades.
+#[test]
+fn transaction_lab_matches_rfc_0004_concurrency_rules() {
+    use rustit_core::{
+        Actor, ActorKind, CommitError, Domain, ObjectRef, ObjectVersion, Operation, OperationError,
+        ProjectSnapshot, Proposal,
+    };
+
+    const CONCURRENT_EDITS: &str =
+        include_str!("../../../fixtures/transaction-lab/concurrent-edits.json");
+
+    #[derive(Debug, Deserialize)]
+    struct Fixture {
+        case: String,
+        rfc: String,
+        units: String,
+        project_id: String,
+        level_id: String,
+        wall_id: String,
+        activity_id: String,
+        link_id: String,
+        wall_baseline_start: [f64; 3],
+        wall_baseline_end: [f64; 3],
+        wall_thickness: f64,
+        wall_height: f64,
+        activity_duration_hours: u32,
+        separated_edits: Separated,
+        overlapping_edits: Overlapping,
+        atomic_rejection: Atomic,
+        no_cascades: NoCascades,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct Separated {
+        modeler_wall_height: f64,
+        scheduler_activity_duration_hours: u32,
+        expected_head: u64,
+        expected_wall_version: u64,
+        expected_activity_version: u64,
+        expected_link_version: u64,
+        expected_domains: Vec<Vec<String>>,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct Overlapping {
+        first_wall_height: f64,
+        second_wall_height: f64,
+        expected_conflicts: Vec<FixtureRef>,
+        expected_wall_height: f64,
+        expected_wall_version: u64,
+        expected_head: u64,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct Atomic {
+        activity_duration_hours: u32,
+        valid_wall_height: f64,
+        invalid_wall_height: f64,
+        expected_rejected_operation_index: usize,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct NoCascades {
+        expected_dependents: Vec<FixtureRef>,
+        expected_change_order: Vec<FixtureRef>,
+        expected_head: u64,
+        expected_wall_tombstone_version: u64,
+        expected_link_tombstone_version: u64,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct FixtureRef {
+        kind: String,
+        id: String,
+    }
+
+    fn object_ref(value: &FixtureRef) -> ObjectRef {
+        let uuid = parse_uuid(&value.id);
+        match value.kind.as_str() {
+            "wall" => ObjectRef::Wall(ElementId::from_uuid(uuid)),
+            "activity" => ObjectRef::Activity(ActivityId::from_uuid(uuid)),
+            "link" => ObjectRef::Link(ElementActivityLinkId::from_uuid(uuid)),
+            other => panic!("unsupported fixture object kind {other}"),
+        }
+    }
+
+    fn domain_name(domain: Domain) -> &'static str {
+        match domain {
+            Domain::Project => "project",
+            Domain::Model => "model",
+            Domain::Schedule => "schedule",
+            Domain::FourD => "four_d",
+        }
+    }
+
+    let fixture: Fixture = serde_json::from_str(CONCURRENT_EDITS).expect("transaction fixture");
+    assert_eq!(fixture.case, "safe-room-concurrent-edits");
+    assert_eq!(fixture.rfc, "0004");
+    assert_eq!(fixture.units, "metres_and_working_hours");
+
+    let wall_id = ElementId::from_uuid(parse_uuid(&fixture.wall_id));
+    let activity_id = ActivityId::from_uuid(parse_uuid(&fixture.activity_id));
+    let link_id = ElementActivityLinkId::from_uuid(parse_uuid(&fixture.link_id));
+    let wall_ref = ObjectRef::Wall(wall_id);
+    let activity_ref = ObjectRef::Activity(activity_id);
+    let link_ref = ObjectRef::Link(link_id);
+
+    let genesis = || {
+        let mut project = Project::new("Safe Room transaction lab");
+        project.id = ProjectId::from_uuid(parse_uuid(&fixture.project_id));
+        let mut level = Level::new("Dungeon Floor 1", 0.0);
+        level.id = LevelId::from_uuid(parse_uuid(&fixture.level_id));
+        let mut wall = Wall::new(
+            level.id,
+            Segment3::new(
+                point(fixture.wall_baseline_start),
+                point(fixture.wall_baseline_end),
+            ),
+            fixture.wall_thickness,
+            fixture.wall_height,
+        )
+        .expect("fixture wall");
+        wall.id = wall_id;
+        let mut activity = Activity::new("Carl frames wall", fixture.activity_duration_hours);
+        activity.id = activity_id;
+        let mut link =
+            ElementActivityLink::new(wall_id, activity_id, ElementActivityRole::Construct);
+        link.id = link_id;
+
+        project.model.add_level(level).expect("fixture level");
+        project.model.add_wall(wall).expect("fixture wall");
+        project
+            .schedule
+            .add_activity(activity)
+            .expect("fixture activity");
+        project.link_element_activity(link).expect("fixture link");
+        ProjectSnapshot::genesis(project)
+    };
+    let modeler = Actor::new(ActorKind::Human, "princess-donut-modeler");
+    let scheduler = Actor::new(ActorKind::Human, "mordecai-scheduler");
+    let wall_height = |snapshot: &ProjectSnapshot| snapshot.project().model.walls[0].height;
+
+    // 1. Separated edits.
+    let separated = &fixture.separated_edits;
+    let mut snapshot = genesis();
+    let model_edit = snapshot
+        .preview(Proposal::new(
+            modeler.clone(),
+            "Raise wall to clear the ceiling plenum",
+            vec![Operation::SetWallHeight {
+                id: wall_id,
+                height: separated.modeler_wall_height,
+            }],
+        ))
+        .expect("modeler preview");
+    let schedule_edit = snapshot
+        .preview(Proposal::new(
+            scheduler.clone(),
+            "Framing crew reduced",
+            vec![Operation::SetActivityDuration {
+                id: activity_id,
+                duration_hours: separated.scheduler_activity_duration_hours,
+            }],
+        ))
+        .expect("scheduler preview");
+    let first = snapshot.commit(model_edit).expect("modeler commit");
+    let second = snapshot
+        .commit(schedule_edit)
+        .expect("scheduler commit does not conflict");
+
+    assert_eq!(snapshot.head().0, separated.expected_head);
+    assert_eq!(
+        snapshot.version(wall_ref),
+        Some(ObjectVersion(separated.expected_wall_version))
+    );
+    assert_eq!(
+        snapshot.version(activity_ref),
+        Some(ObjectVersion(separated.expected_activity_version))
+    );
+    assert_eq!(
+        snapshot.version(link_ref),
+        Some(ObjectVersion(separated.expected_link_version))
+    );
+    let domains: Vec<Vec<&str>> = [&first, &second]
+        .iter()
+        .map(|entry| entry.domains.iter().copied().map(domain_name).collect())
+        .collect();
+    assert_eq!(domains, separated.expected_domains);
+    assert_eq!(wall_height(&snapshot), separated.modeler_wall_height);
+    assert_eq!(
+        snapshot.project().schedule.activities[0].duration_hours,
+        separated.scheduler_activity_duration_hours
+    );
+
+    // 2. Overlapping edits.
+    let overlapping = &fixture.overlapping_edits;
+    let mut snapshot = genesis();
+    let set_height = |height: f64| {
+        Proposal::new(
+            modeler.clone(),
+            "Adjust wall height",
+            vec![Operation::SetWallHeight {
+                id: wall_id,
+                height,
+            }],
+        )
+    };
+    let winner = snapshot
+        .preview(set_height(overlapping.first_wall_height))
+        .expect("first preview");
+    let loser = snapshot
+        .preview(set_height(overlapping.second_wall_height))
+        .expect("second preview");
+    snapshot.commit(winner).expect("first commit");
+    let before_conflict = snapshot.clone();
+
+    assert_eq!(
+        snapshot.commit(loser),
+        Err(CommitError::Conflict {
+            objects: overlapping
+                .expected_conflicts
+                .iter()
+                .map(object_ref)
+                .collect()
+        })
+    );
+    assert_eq!(snapshot, before_conflict, "a conflict writes nothing");
+    assert_eq!(wall_height(&snapshot), overlapping.expected_wall_height);
+    assert_eq!(
+        snapshot.version(wall_ref),
+        Some(ObjectVersion(overlapping.expected_wall_version))
+    );
+    assert_eq!(snapshot.head().0, overlapping.expected_head);
+
+    // 3. Atomic rejection.
+    let atomic = &fixture.atomic_rejection;
+    let snapshot = genesis();
+    let rejection = snapshot
+        .preview(Proposal::new(
+            modeler.clone(),
+            "Mixed edit with one invalid height",
+            vec![
+                Operation::SetActivityDuration {
+                    id: activity_id,
+                    duration_hours: atomic.activity_duration_hours,
+                },
+                Operation::SetWallHeight {
+                    id: wall_id,
+                    height: atomic.valid_wall_height,
+                },
+                Operation::SetWallHeight {
+                    id: wall_id,
+                    height: atomic.invalid_wall_height,
+                },
+            ],
+        ))
+        .expect_err("negative height rejects the proposal");
+
+    assert_eq!(
+        rejection.operation_index,
+        atomic.expected_rejected_operation_index
+    );
+    assert!(matches!(rejection.error, OperationError::Model(_)));
+    assert_eq!(snapshot, genesis(), "a rejected preview changes nothing");
+
+    // 4. No implicit cascades.
+    let no_cascades = &fixture.no_cascades;
+    let mut snapshot = genesis();
+    let rejection = snapshot
+        .preview(Proposal::new(
+            modeler.clone(),
+            "Remove wall",
+            vec![Operation::DeleteWall { id: wall_id }],
+        ))
+        .expect_err("a linked wall cannot be deleted implicitly");
+
+    assert_eq!(rejection.operation_index, 0);
+    assert_eq!(
+        rejection.error,
+        OperationError::HasDependents {
+            object: wall_ref,
+            dependents: no_cascades
+                .expected_dependents
+                .iter()
+                .map(object_ref)
+                .collect(),
+        }
+    );
+
+    let explicit = snapshot
+        .preview(Proposal::new(
+            modeler,
+            "Unlink, then remove wall",
+            vec![
+                Operation::UnlinkElementActivity { id: link_id },
+                Operation::DeleteWall { id: wall_id },
+            ],
+        ))
+        .expect("explicit unlink then delete");
+    let changed: Vec<ObjectRef> = explicit
+        .changes()
+        .iter()
+        .map(|change| change.object)
+        .collect();
+    assert_eq!(
+        changed,
+        no_cascades
+            .expected_change_order
+            .iter()
+            .map(object_ref)
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        explicit
+            .changes()
+            .iter()
+            .all(|change| change.before.is_some() && change.after.is_none())
+    );
+    snapshot.commit(explicit).expect("explicit delete commits");
+
+    assert_eq!(snapshot.head().0, no_cascades.expected_head);
+    assert_eq!(snapshot.version(wall_ref), None);
+    assert_eq!(
+        snapshot.tombstone_version(wall_ref),
+        Some(ObjectVersion(no_cascades.expected_wall_tombstone_version))
+    );
+    assert_eq!(
+        snapshot.tombstone_version(link_ref),
+        Some(ObjectVersion(no_cascades.expected_link_tombstone_version))
+    );
+    assert_eq!(snapshot.version(activity_ref), Some(ObjectVersion(1)));
+    assert!(snapshot.project().element_activity_links.is_empty());
+    assert!(snapshot.project().model.walls.is_empty());
+}

@@ -47,6 +47,8 @@ Defines `Activity` (`IfcTask`), `ActivityRelationship` (`IfcRelSequence`), relat
 
 Defines `Project` (`IfcProject`) as the aggregate joining a BIM model, schedule, and `ElementActivityLink` collection. The link aligns with `IfcRelAssignsToProcess`; this is where vendor-independent 4D exists.
 
+The `transaction` module implements RFC 0004 in memory: typed `Operation`s form a `Proposal`; `ProjectSnapshot::preview` validates it into an object-level change set without writing; `ProjectSnapshot::commit` applies it only if every touched object is still at its base version, then returns a `LogEntry`. Model, schedule, and link objects are versioned independently.
+
 ### `rustit-postgres`
 
 Defines an asynchronous repository port with optimistic versions and non-secret connection settings. It intentionally has no database driver or schema in v0.0.1. A later implementation will target PostgreSQL and PostGIS while local/offline storage remains possible.
