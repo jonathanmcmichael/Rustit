@@ -77,7 +77,7 @@ project_id      uuid      not null
 <object>_id     uuid      not null        -- the canonical Rustit UUID, never a surrogate key
 version         bigint    not null        -- RFC 0004 ObjectVersion
 deleted         boolean   not null        -- tombstone; IDs are never reused
-created_seq     bigint    not null        -- log sequence that created the object (0 at genesis)
+created_seq     bigint    not null        -- log sequence that created or last restored the object (0 at genesis)
 created_ord     integer   not null        -- position within that change set
 data            jsonb     not null        -- complete serialized object state
 primary key (project_id, <object>_id)
@@ -85,7 +85,7 @@ primary key (project_id, <object>_id)
 
 - **`data` is canonical.** It is the serde form of the domain struct, and loading deserializes it. A loaded object must equal the committed object exactly; the round-trip fixture in §9 checks this for every type, including `f64` fields.
 - **Typed columns are projections** of `data`, written in the same statement: references, fields worth filtering or indexing, and spatial columns. They exist for integrity, indexes, and SQL readers, and are never read back as truth. Adding a projected column is a migration. Adding a domain field that is not projected is not.
-- **Load order is deterministic.** Rows load in `(created_seq, created_ord)` order. That reproduces the order the in-memory commit appends objects, so a loaded snapshot equals the in-memory one.
+- **Load order is deterministic.** Rows load in `(created_seq, created_ord)` order. That reproduces the order the in-memory commit appends objects, so a loaded snapshot equals the in-memory one. An undo that restores a tombstoned object appends it again, so restoration resets `created_seq` and `created_ord` to the restoring commit.
 
 Tables (projections beyond the spine shown):
 
@@ -124,7 +124,7 @@ Wall baselines are stored as `geometry(LineStringZ, 0)`, built in SQL from the b
 One database transaction at `READ COMMITTED`:
 
 1. `SELECT head_seq FROM project WHERE project_id = $1 FOR UPDATE`. This serializes commits **per project**, which the total log order requires, while different projects commit in parallel. Commits are short, so this lock does not serialize editing, only the brief write.
-2. Check every `ObjectChange` against its row. The row's version must equal `base_version` and the row must not be deleted; for creations, the row must not exist. Check every referenced object for a live row. Collect **all** failures before deciding, so the error lists the complete, deterministically ordered conflict set, exactly as the in-memory backend does.
+2. Check every `ObjectChange` against its row. The row's version must equal `base_version` and the row must not be deleted; for creations, the row must not exist. Check every referenced object for a live row. For every object the change set deletes, check that no live row outside the change set still references it. A dependent committed after the preview does not change the deleted object's version, so the version check alone would miss it. Collect **all** failures before deciding, so the error lists the complete, deterministically ordered conflict set, exactly as the in-memory backend does.
 3. If any check failed, roll back and return `Conflict { objects }`.
 4. Write the changes:
    - creations as batched inserts;
