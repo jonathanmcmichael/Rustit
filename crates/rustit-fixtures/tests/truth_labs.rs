@@ -333,6 +333,81 @@ fn schedule_lab_matches_independently_calculated_relationship_timings() {
 }
 
 #[test]
+fn schedule_lab_reports_exactly_the_members_of_a_cyclic_network() {
+    const CYCLIC_NETWORK: &str = include_str!("../../../fixtures/schedule-lab/cyclic-network.json");
+
+    #[derive(Debug, Deserialize)]
+    struct CyclicFixture {
+        case: String,
+        time_basis: String,
+        activities: Vec<CyclicActivity>,
+        relationships: Vec<CyclicRelationship>,
+        expected_cycles: Vec<Vec<String>>,
+        expected_excluded: Vec<String>,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct CyclicActivity {
+        id: String,
+        name: String,
+        duration_hours: u32,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct CyclicRelationship {
+        predecessor_id: String,
+        successor_id: String,
+    }
+
+    let fixture: CyclicFixture =
+        serde_json::from_str(CYCLIC_NETWORK).expect("cyclic network fixture");
+    assert_eq!(fixture.case, "mordecai-cyclic-network-diagnostic");
+    assert_eq!(fixture.time_basis, "working_hours_without_calendars");
+
+    let activity_id = |value: &str| ActivityId::from_uuid(parse_uuid(value));
+    let mut schedule = Schedule::default();
+    for fixture_activity in &fixture.activities {
+        let mut activity = Activity::new(&fixture_activity.name, fixture_activity.duration_hours);
+        activity.id = activity_id(&fixture_activity.id);
+        schedule.add_activity(activity).expect("fixture activity");
+    }
+    for relationship in &fixture.relationships {
+        schedule
+            .add_relationship(ActivityRelationship::new(
+                activity_id(&relationship.predecessor_id),
+                activity_id(&relationship.successor_id),
+                RelationshipType::FinishStart,
+                0,
+            ))
+            .expect("fixture relationship");
+    }
+
+    let expected: Vec<Vec<ActivityId>> = fixture
+        .expected_cycles
+        .iter()
+        .map(|cycle| cycle.iter().map(|id| activity_id(id)).collect())
+        .collect();
+    let cycles = match calculate_cpm(&schedule) {
+        Err(rustit_schedule::ScheduleError::CyclicNetwork { cycles }) => cycles,
+        other => panic!("expected a cyclic network diagnostic, got {other:?}"),
+    };
+    assert_eq!(cycles, expected);
+    for excluded in &fixture.expected_excluded {
+        let excluded = activity_id(excluded);
+        assert!(
+            cycles.iter().flatten().all(|id| *id != excluded),
+            "{excluded} must not be reported as a cycle member"
+        );
+    }
+
+    // Repeated calculation returns an identical diagnostic.
+    assert_eq!(
+        calculate_cpm(&schedule),
+        Err(rustit_schedule::ScheduleError::CyclicNetwork { cycles })
+    );
+}
+
+#[test]
 fn four_d_lab_preserves_all_stable_ids_in_a_vendor_neutral_link() {
     let fixture: FourDFixture = serde_json::from_str(WALL_4D_LINK).expect("4D fixture");
     assert_eq!(fixture.case, "royal-court-wall-construction-link");

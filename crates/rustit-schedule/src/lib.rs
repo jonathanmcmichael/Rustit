@@ -2,7 +2,7 @@
 
 use rustit_ifc::{ClassificationReference, IfcEntity, IfcRootId};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque, hash_map::Entry};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -246,7 +246,14 @@ pub fn calculate_cpm(schedule: &Schedule) -> Result<CpmResult, ScheduleError> {
     }
 
     if order.len() != activities.len() {
-        return Err(ScheduleError::CyclicNetwork);
+        let mut blocked: Vec<ActivityId> = indegree
+            .iter()
+            .filter_map(|(id, count)| (*count > 0).then_some(*id))
+            .collect();
+        blocked.sort_by_key(|id| id.as_uuid());
+        return Err(ScheduleError::CyclicNetwork {
+            cycles: cyclic_components(&blocked, &outgoing),
+        });
     }
 
     let project_duration_hours = order
@@ -317,6 +324,116 @@ fn relationship_weight(
     }
 }
 
+/// Finds the strongly connected components that form cycles among activities
+/// the topological pass could not order.
+///
+/// `blocked` holds every activity left with unresolved predecessors: cycle
+/// members plus activities that merely sit downstream of a cycle. Only
+/// components with more than one activity, or a single activity related to
+/// itself, are cycles. Activities are visited and reported in UUID order, so
+/// the diagnostic is independent of names and insertion order. Each cycle is
+/// sorted by UUID and cycles are ordered by their first member.
+///
+/// Uses an iterative form of Tarjan's algorithm so that long blocked chains
+/// cannot exhaust the call stack.
+fn cyclic_components(
+    blocked: &[ActivityId],
+    outgoing: &HashMap<ActivityId, Vec<(ActivityId, i64)>>,
+) -> Vec<Vec<ActivityId>> {
+    let in_scope: HashSet<ActivityId> = blocked.iter().copied().collect();
+    let successors = |id: ActivityId| -> Vec<ActivityId> {
+        let mut next: Vec<ActivityId> = outgoing
+            .get(&id)
+            .into_iter()
+            .flatten()
+            .map(|(successor, _)| *successor)
+            .filter(|successor| in_scope.contains(successor))
+            .collect();
+        next.sort_by_key(|successor| successor.as_uuid());
+        next.dedup();
+        next
+    };
+
+    let mut index_of: HashMap<ActivityId, usize> = HashMap::with_capacity(blocked.len());
+    let mut lowlink: HashMap<ActivityId, usize> = HashMap::with_capacity(blocked.len());
+    let mut on_stack: HashSet<ActivityId> = HashSet::with_capacity(blocked.len());
+    let mut stack: Vec<ActivityId> = Vec::new();
+    let mut cycles: Vec<Vec<ActivityId>> = Vec::new();
+    let mut next_index = 0_usize;
+
+    for &root in blocked {
+        if index_of.contains_key(&root) {
+            continue;
+        }
+
+        // Each frame is (activity, its in-scope successors, next successor position).
+        let mut frames: Vec<(ActivityId, Vec<ActivityId>, usize)> = Vec::new();
+        index_of.insert(root, next_index);
+        lowlink.insert(root, next_index);
+        next_index += 1;
+        stack.push(root);
+        on_stack.insert(root);
+        frames.push((root, successors(root), 0));
+
+        while let Some(top) = frames.len().checked_sub(1) {
+            let (node, position) = (frames[top].0, frames[top].2);
+
+            if let Some(&next) = frames[top].1.get(position) {
+                frames[top].2 += 1;
+                match index_of.entry(next) {
+                    Entry::Vacant(slot) => {
+                        slot.insert(next_index);
+                        lowlink.insert(next, next_index);
+                        next_index += 1;
+                        stack.push(next);
+                        on_stack.insert(next);
+                        frames.push((next, successors(next), 0));
+                    }
+                    Entry::Occupied(visited) if on_stack.contains(&next) => {
+                        let candidate = *visited.get();
+                        let low = lowlink.get_mut(&node).expect("visited activity");
+                        *low = (*low).min(candidate);
+                    }
+                    Entry::Occupied(_) => {}
+                }
+                continue;
+            }
+
+            frames.pop();
+            let node_low = lowlink[&node];
+            if let Some(parent) = frames.last() {
+                let low = lowlink.get_mut(&parent.0).expect("visited activity");
+                *low = (*low).min(node_low);
+            }
+
+            if node_low == index_of[&node] {
+                let mut component = Vec::new();
+                loop {
+                    let member = stack.pop().expect("component member on stack");
+                    on_stack.remove(&member);
+                    component.push(member);
+                    if member == node {
+                        break;
+                    }
+                }
+                let is_self_loop = component.len() == 1
+                    && outgoing
+                        .get(&node)
+                        .into_iter()
+                        .flatten()
+                        .any(|(successor, _)| *successor == node);
+                if component.len() > 1 || is_self_loop {
+                    component.sort_by_key(|id| id.as_uuid());
+                    cycles.push(component);
+                }
+            }
+        }
+    }
+
+    cycles.sort_by_key(|cycle| cycle[0].as_uuid());
+    cycles
+}
+
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum ScheduleError {
     #[error("activity {0} already exists")]
@@ -325,8 +442,11 @@ pub enum ScheduleError {
     DuplicateRelationship(ActivityRelationshipId),
     #[error("activity {0} does not exist")]
     UnknownActivity(ActivityId),
-    #[error("activity network contains a cycle")]
-    CyclicNetwork,
+    /// Each inner list is one cycle's members, sorted by UUID; cycles are
+    /// ordered by their first member. Activities that are only downstream of a
+    /// cycle are not reported.
+    #[error("activity network contains {} cycle(s)", .cycles.len())]
+    CyclicNetwork { cycles: Vec<Vec<ActivityId>> },
 }
 
 #[cfg(test)]
@@ -567,7 +687,93 @@ mod tests {
             ],
         };
 
-        assert_eq!(calculate_cpm(&schedule), Err(ScheduleError::CyclicNetwork));
+        let mut expected = vec![first.id, second.id];
+        expected.sort_by_key(|id| id.as_uuid());
+
+        assert_eq!(
+            calculate_cpm(&schedule),
+            Err(ScheduleError::CyclicNetwork {
+                cycles: vec![expected]
+            })
+        );
+    }
+
+    fn fixed_activity(name: &str, last_digit: u128) -> Activity {
+        let mut activity = Activity::new(name, 4);
+        activity.id = ActivityId::from_uuid(Uuid::from_u128(last_digit));
+        activity
+    }
+
+    fn fs(predecessor: &Activity, successor: &Activity) -> ActivityRelationship {
+        ActivityRelationship::new(
+            predecessor.id,
+            successor.id,
+            RelationshipType::FinishStart,
+            0,
+        )
+    }
+
+    fn cycles_of(schedule: &Schedule) -> Vec<Vec<ActivityId>> {
+        match calculate_cpm(schedule) {
+            Err(ScheduleError::CyclicNetwork { cycles }) => cycles,
+            other => panic!("expected a cyclic network, got {other:?}"),
+        }
+    }
+
+    /// A → B → C → A, with C → E downstream of the cycle and D independent.
+    /// E is blocked by the cycle but is not a member of it, so only A, B, and
+    /// C are reported.
+    #[test]
+    fn reports_only_cycle_members_not_downstream_activities() {
+        let a = fixed_activity("A", 1);
+        let b = fixed_activity("B", 2);
+        let c = fixed_activity("C", 3);
+        let d = fixed_activity("D", 4);
+        let e = fixed_activity("E", 5);
+        let schedule = Schedule {
+            activities: vec![a.clone(), b.clone(), c.clone(), d, e.clone()],
+            relationships: vec![fs(&a, &b), fs(&b, &c), fs(&c, &a), fs(&c, &e)],
+        };
+
+        assert_eq!(cycles_of(&schedule), vec![vec![a.id, b.id, c.id]]);
+    }
+
+    #[test]
+    fn reports_separate_cycles_and_self_loops_in_uuid_order() {
+        let a = fixed_activity("A", 1);
+        let b = fixed_activity("B", 2);
+        let c = fixed_activity("C", 3);
+        let d = fixed_activity("D", 4);
+        let e = fixed_activity("E", 5);
+        let schedule = Schedule {
+            activities: vec![e.clone(), d.clone(), c.clone(), b.clone(), a.clone()],
+            relationships: vec![fs(&d, &e), fs(&e, &d), fs(&c, &c), fs(&a, &b), fs(&b, &a)],
+        };
+
+        assert_eq!(
+            cycles_of(&schedule),
+            vec![vec![a.id, b.id], vec![c.id], vec![d.id, e.id]]
+        );
+    }
+
+    #[test]
+    fn cycle_diagnostic_ignores_insertion_order_and_repeats_identically() {
+        let a = fixed_activity("A", 1);
+        let b = fixed_activity("B", 2);
+        let c = fixed_activity("C", 3);
+        let forward = Schedule {
+            activities: vec![a.clone(), b.clone(), c.clone()],
+            relationships: vec![fs(&a, &b), fs(&b, &c), fs(&c, &a)],
+        };
+        let reversed = Schedule {
+            activities: vec![c.clone(), b.clone(), a.clone()],
+            relationships: vec![fs(&c, &a), fs(&b, &c), fs(&a, &b)],
+        };
+
+        let first = cycles_of(&forward);
+        assert_eq!(first, cycles_of(&forward));
+        assert_eq!(first, cycles_of(&reversed));
+        assert_eq!(first, vec![vec![a.id, b.id, c.id]]);
     }
 
     #[test]
