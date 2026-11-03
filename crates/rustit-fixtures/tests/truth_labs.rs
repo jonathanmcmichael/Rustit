@@ -867,3 +867,364 @@ fn transaction_lab_matches_rfc_0004_concurrency_rules() {
     assert!(snapshot.project().element_activity_links.is_empty());
     assert!(snapshot.project().model.walls.is_empty());
 }
+
+/// RFC 0004 acceptance fixtures 5–7: reference survival, replay, and undo.
+#[test]
+fn transaction_lab_replays_and_undoes_history() {
+    use rustit_core::{
+        Actor, ActorKind, CommitError, Domain, LogEntry, ObjectRef, ObjectVersion, Operation,
+        ProjectSnapshot, Proposal, ReplayError, UndoError,
+    };
+    use rustit_schedule::ActivityRelationshipId;
+
+    const HISTORY: &str = include_str!("../../../fixtures/transaction-lab/history.json");
+
+    #[derive(Debug, Deserialize)]
+    struct Fixture {
+        case: String,
+        rfc: String,
+        units: String,
+        project_id: String,
+        level_id: String,
+        wall_id: String,
+        activity_a_id: String,
+        activity_b_id: String,
+        relationship_id: String,
+        link_id: String,
+        wall_baseline_start: [f64; 3],
+        wall_baseline_end: [f64; 3],
+        wall_thickness: f64,
+        wall_height: f64,
+        activity_a_duration_hours: u32,
+        activity_b_duration_hours: u32,
+        reference_survival: ReferenceSurvival,
+        replay: Replay,
+        undo: Undo,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct ReferenceSurvival {
+        expected_conflicts: Vec<FixtureRef>,
+        expected_head: u64,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct Replay {
+        raised_wall_height: f64,
+        revised_activity_b_duration_hours: u32,
+        expected_head: u64,
+        expected_domains: Vec<Vec<String>>,
+        expected_live_versions: Vec<VersionedRef>,
+        expected_link_tombstone_version: u64,
+        gap_expected_sequence: u64,
+        gap_found_sequence: u64,
+        tampered_base_version: u64,
+        tampered_conflicts: Vec<FixtureRef>,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct Undo {
+        raised_wall_height: f64,
+        restored_wall_height: f64,
+        expected_undo_sequence: u64,
+        expected_wall_version_after_undo: u64,
+        later_wall_height: f64,
+        expected_repeat_undo_conflicts: Vec<FixtureRef>,
+        expected_restore_change_order: Vec<FixtureRef>,
+        expected_restored_version: u64,
+        expected_blocked_restore_conflicts: Vec<FixtureRef>,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct FixtureRef {
+        kind: String,
+        id: String,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct VersionedRef {
+        kind: String,
+        id: String,
+        version: u64,
+    }
+
+    fn object_ref(kind: &str, id: &str) -> ObjectRef {
+        let uuid = parse_uuid(id);
+        match kind {
+            "wall" => ObjectRef::Wall(ElementId::from_uuid(uuid)),
+            "activity" => ObjectRef::Activity(ActivityId::from_uuid(uuid)),
+            "relationship" => ObjectRef::Relationship(ActivityRelationshipId::from_uuid(uuid)),
+            "link" => ObjectRef::Link(ElementActivityLinkId::from_uuid(uuid)),
+            other => panic!("unsupported fixture object kind {other}"),
+        }
+    }
+
+    fn refs(values: &[FixtureRef]) -> Vec<ObjectRef> {
+        values
+            .iter()
+            .map(|value| object_ref(&value.kind, &value.id))
+            .collect()
+    }
+
+    fn domain_name(domain: Domain) -> &'static str {
+        match domain {
+            Domain::Project => "project",
+            Domain::Model => "model",
+            Domain::Schedule => "schedule",
+            Domain::FourD => "four_d",
+        }
+    }
+
+    let fixture: Fixture = serde_json::from_str(HISTORY).expect("history fixture");
+    assert_eq!(fixture.case, "safe-room-history");
+    assert_eq!(fixture.rfc, "0004");
+    assert_eq!(fixture.units, "metres_and_working_hours");
+
+    let wall_id = ElementId::from_uuid(parse_uuid(&fixture.wall_id));
+    let activity_a = ActivityId::from_uuid(parse_uuid(&fixture.activity_a_id));
+    let activity_b = ActivityId::from_uuid(parse_uuid(&fixture.activity_b_id));
+    let relationship_id = ActivityRelationshipId::from_uuid(parse_uuid(&fixture.relationship_id));
+    let link_id = ElementActivityLinkId::from_uuid(parse_uuid(&fixture.link_id));
+    let wall_ref = ObjectRef::Wall(wall_id);
+    let link_ref = ObjectRef::Link(link_id);
+
+    let genesis_project = || {
+        let mut project = Project::new("Safe Room history lab");
+        project.id = ProjectId::from_uuid(parse_uuid(&fixture.project_id));
+        let mut level = Level::new("Dungeon Floor 1", 0.0);
+        level.id = LevelId::from_uuid(parse_uuid(&fixture.level_id));
+        let mut wall = Wall::new(
+            level.id,
+            Segment3::new(
+                point(fixture.wall_baseline_start),
+                point(fixture.wall_baseline_end),
+            ),
+            fixture.wall_thickness,
+            fixture.wall_height,
+        )
+        .expect("fixture wall");
+        wall.id = wall_id;
+        let mut first = Activity::new("Carl frames wall", fixture.activity_a_duration_hours);
+        first.id = activity_a;
+        let mut second = Activity::new("Mordecai inspects wall", fixture.activity_b_duration_hours);
+        second.id = activity_b;
+
+        project.model.add_level(level).expect("fixture level");
+        project.model.add_wall(wall).expect("fixture wall");
+        project
+            .schedule
+            .add_activity(first)
+            .expect("fixture activity A");
+        project
+            .schedule
+            .add_activity(second)
+            .expect("fixture activity B");
+        project
+    };
+    let carl = Actor::new(ActorKind::Human, "carl");
+    let donut = Actor::new(ActorKind::Human, "princess-donut");
+    let commit = |snapshot: &mut ProjectSnapshot, operations: Vec<Operation>| -> LogEntry {
+        let preview = snapshot
+            .preview(Proposal::new(carl.clone(), "history lab", operations))
+            .expect("valid proposal");
+        snapshot.commit(preview).expect("commit")
+    };
+    let link = || {
+        let mut link =
+            ElementActivityLink::new(wall_id, activity_a, ElementActivityRole::Construct);
+        link.id = link_id;
+        link
+    };
+    let wall_height = |snapshot: &ProjectSnapshot| snapshot.project().model.walls[0].height;
+
+    // 5. Reference survival.
+    let mut snapshot = ProjectSnapshot::genesis(genesis_project());
+    let link_preview = snapshot
+        .preview(Proposal::new(
+            carl.clone(),
+            "Link framing",
+            vec![Operation::LinkElementActivity(link())],
+        ))
+        .expect("link preview");
+    commit(
+        &mut snapshot,
+        vec![Operation::DeleteActivity { id: activity_a }],
+    );
+    assert_eq!(
+        snapshot.commit(link_preview),
+        Err(CommitError::Conflict {
+            objects: refs(&fixture.reference_survival.expected_conflicts)
+        })
+    );
+    assert_eq!(snapshot.head().0, fixture.reference_survival.expected_head);
+
+    // 6. Replay.
+    let replay = &fixture.replay;
+    let mut snapshot = ProjectSnapshot::genesis(genesis_project());
+    let mut relationship =
+        ActivityRelationship::new(activity_a, activity_b, RelationshipType::FinishStart, 0);
+    relationship.id = relationship_id;
+    let log = vec![
+        commit(
+            &mut snapshot,
+            vec![Operation::SetWallHeight {
+                id: wall_id,
+                height: replay.raised_wall_height,
+            }],
+        ),
+        commit(
+            &mut snapshot,
+            vec![
+                Operation::CreateRelationship(relationship),
+                Operation::LinkElementActivity(link()),
+            ],
+        ),
+        commit(
+            &mut snapshot,
+            vec![Operation::SetActivityDuration {
+                id: activity_b,
+                duration_hours: replay.revised_activity_b_duration_hours,
+            }],
+        ),
+        commit(
+            &mut snapshot,
+            vec![Operation::UnlinkElementActivity { id: link_id }],
+        ),
+    ];
+
+    assert_eq!(snapshot.head().0, replay.expected_head);
+    let domains: Vec<Vec<&str>> = log
+        .iter()
+        .map(|entry| entry.domains.iter().copied().map(domain_name).collect())
+        .collect();
+    assert_eq!(domains, replay.expected_domains);
+    for expected in &replay.expected_live_versions {
+        assert_eq!(
+            snapshot.version(object_ref(&expected.kind, &expected.id)),
+            Some(ObjectVersion(expected.version)),
+            "{} {} version",
+            expected.kind,
+            expected.id
+        );
+    }
+    assert_eq!(
+        snapshot.tombstone_version(link_ref),
+        Some(ObjectVersion(replay.expected_link_tombstone_version))
+    );
+
+    let replayed = ProjectSnapshot::replay(genesis_project(), &log).expect("clean replay");
+    assert_eq!(
+        replayed, snapshot,
+        "replay reproduces state, versions, and head"
+    );
+
+    // The log survives serialization and still replays to the same state.
+    let json = serde_json::to_string(&log).expect("serialize log");
+    let restored_log: Vec<LogEntry> = serde_json::from_str(&json).expect("deserialize log");
+    assert_eq!(
+        ProjectSnapshot::replay(genesis_project(), &restored_log).expect("replay restored log"),
+        snapshot
+    );
+
+    let with_gap = [log[0].clone(), log[2].clone(), log[3].clone()];
+    assert_eq!(
+        ProjectSnapshot::replay(genesis_project(), &with_gap),
+        Err(ReplayError::OutOfOrder {
+            expected: rustit_core::LogSequence(replay.gap_expected_sequence),
+            found: rustit_core::LogSequence(replay.gap_found_sequence),
+        })
+    );
+
+    let mut tampered = log.clone();
+    tampered[0].changes[0].base_version = Some(ObjectVersion(replay.tampered_base_version));
+    assert_eq!(
+        ProjectSnapshot::replay(genesis_project(), &tampered),
+        Err(ReplayError::Inconsistent {
+            sequence: rustit_core::LogSequence(1),
+            objects: refs(&replay.tampered_conflicts),
+        })
+    );
+
+    // 7. Undo.
+    let undo = &fixture.undo;
+    let mut snapshot = ProjectSnapshot::genesis(genesis_project());
+    let raise = commit(
+        &mut snapshot,
+        vec![Operation::SetWallHeight {
+            id: wall_id,
+            height: undo.raised_wall_height,
+        }],
+    );
+    let undo_preview = snapshot
+        .undo(&raise, donut.clone(), "Restore original height")
+        .expect("undo preview");
+    assert_eq!(undo_preview.reverts(), Some(raise.transaction_id));
+    let undone = snapshot.commit(undo_preview).expect("undo commit");
+
+    assert_eq!(undone.sequence.0, undo.expected_undo_sequence);
+    assert_eq!(undone.reverts, Some(raise.transaction_id));
+    assert!(undone.operations.is_empty());
+    assert_eq!(wall_height(&snapshot), undo.restored_wall_height);
+    assert_eq!(
+        snapshot.version(wall_ref),
+        Some(ObjectVersion(undo.expected_wall_version_after_undo))
+    );
+
+    commit(
+        &mut snapshot,
+        vec![Operation::SetWallHeight {
+            id: wall_id,
+            height: undo.later_wall_height,
+        }],
+    );
+    assert_eq!(
+        snapshot.undo(&raise, donut.clone(), "Undo again"),
+        Err(UndoError::Conflict {
+            objects: refs(&undo.expected_repeat_undo_conflicts)
+        })
+    );
+
+    // Undo restores deleted objects from their tombstones.
+    let mut snapshot = ProjectSnapshot::genesis(genesis_project());
+    commit(&mut snapshot, vec![Operation::LinkElementActivity(link())]);
+    let removal = commit(
+        &mut snapshot,
+        vec![
+            Operation::UnlinkElementActivity { id: link_id },
+            Operation::DeleteWall { id: wall_id },
+        ],
+    );
+    let mut blocked = snapshot.clone();
+
+    let restore = snapshot
+        .undo(&removal, donut.clone(), "Restore wall and link")
+        .expect("restore preview");
+    let order: Vec<ObjectRef> = restore
+        .changes()
+        .iter()
+        .map(|change| change.object)
+        .collect();
+    assert_eq!(order, refs(&undo.expected_restore_change_order));
+    snapshot.commit(restore).expect("restore commit");
+    assert_eq!(
+        snapshot.version(wall_ref),
+        Some(ObjectVersion(undo.expected_restored_version))
+    );
+    assert_eq!(
+        snapshot.version(link_ref),
+        Some(ObjectVersion(undo.expected_restored_version))
+    );
+    assert_eq!(snapshot.project().element_activity_links, vec![link()]);
+
+    // A restored link cannot point at an activity deleted since.
+    commit(
+        &mut blocked,
+        vec![Operation::DeleteActivity { id: activity_a }],
+    );
+    assert_eq!(
+        blocked.undo(&removal, donut, "Restore after activity removal"),
+        Err(UndoError::Conflict {
+            objects: refs(&undo.expected_blocked_restore_conflicts)
+        })
+    );
+}

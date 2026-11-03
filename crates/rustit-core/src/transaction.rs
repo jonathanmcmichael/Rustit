@@ -248,6 +248,7 @@ pub struct Preview {
     changes: Vec<ObjectChange>,
     references: Vec<ObjectRef>,
     diagnostics: Vec<Diagnostic>,
+    reverts: Option<TransactionId>,
 }
 
 impl Preview {
@@ -278,19 +279,30 @@ impl Preview {
     pub fn diagnostics(&self) -> &[Diagnostic] {
         &self.diagnostics
     }
+
+    /// The transaction this preview undoes, if it was built by
+    /// [`ProjectSnapshot::undo`].
+    #[must_use]
+    pub const fn reverts(&self) -> Option<TransactionId> {
+        self.reverts
+    }
 }
 
 /// A committed transaction.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LogEntry {
+    pub project_id: ProjectId,
     pub sequence: LogSequence,
     pub transaction_id: TransactionId,
     pub actor: Actor,
     pub rationale: String,
+    /// The intents as proposed. Empty for an undo, whose meaning is `reverts`.
     pub operations: Vec<Operation>,
     pub changes: Vec<ObjectChange>,
     /// Distinct domains touched by `changes`, in order.
     pub domains: Vec<Domain>,
+    /// The transaction this entry undoes, if it is an undo.
+    pub reverts: Option<TransactionId>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -430,6 +442,7 @@ impl ProjectSnapshot {
             changes,
             references,
             diagnostics,
+            reverts: None,
         })
     }
 
@@ -449,19 +462,155 @@ impl ProjectSnapshot {
             return Err(CommitError::NoChanges);
         }
 
+        let conflicts = self.conflicts(&preview.changes, &preview.references);
+        if !conflicts.is_empty() {
+            return Err(CommitError::Conflict { objects: conflicts });
+        }
+        self.write(&preview.changes);
+
+        let Proposal {
+            id,
+            actor,
+            rationale,
+            operations,
+        } = preview.proposal;
+
+        Ok(LogEntry {
+            project_id: self.project.id,
+            sequence: self.head,
+            transaction_id: id,
+            actor,
+            rationale,
+            operations,
+            domains: domains_of(&preview.changes),
+            changes: preview.changes,
+            reverts: preview.reverts,
+        })
+    }
+
+    /// Builds a compensating transaction that restores every object an earlier
+    /// committed entry changed to its state before that entry.
+    ///
+    /// The undo is checked against the current state exactly as a commit
+    /// would be: it conflicts if any of those objects has changed since the
+    /// entry, if a restored object references something that no longer
+    /// exists, or if an object it removes has gained dependents. The log is
+    /// never rewritten; committing the returned preview appends a new entry
+    /// whose `reverts` names the original transaction.
+    pub fn undo(
+        &self,
+        entry: &LogEntry,
+        actor: Actor,
+        rationale: impl Into<String>,
+    ) -> Result<Preview, UndoError> {
+        if entry.project_id != self.project.id {
+            return Err(UndoError::WrongProject {
+                entry: entry.project_id,
+                snapshot: self.project.id,
+            });
+        }
+        if entry.sequence.0 == 0 || entry.sequence > self.head {
+            return Err(UndoError::NotCommitted(entry.sequence));
+        }
+
+        let changes: Vec<ObjectChange> = entry
+            .changes
+            .iter()
+            .rev()
+            .map(|change| ObjectChange {
+                object: change.object,
+                base_version: Some(ObjectVersion(
+                    change.base_version.map_or(0, |version| version.0) + 1,
+                )),
+                before: change.after.clone(),
+                after: change.before.clone(),
+            })
+            .collect();
+        let references = references_of(&changes);
+        let conflicts = self.conflicts(&changes, &references);
+        if !conflicts.is_empty() {
+            return Err(UndoError::Conflict { objects: conflicts });
+        }
+
+        let mut diagnostics = Vec::new();
+        if changes
+            .iter()
+            .any(|change| change.object.domain() == Domain::Schedule)
+        {
+            let mut working = self.project.clone();
+            for change in &changes {
+                apply_change(&mut working, change);
+            }
+            if let Err(ScheduleError::CyclicNetwork { cycles }) = calculate_cpm(&working.schedule) {
+                diagnostics.push(Diagnostic::CyclicSchedule { cycles });
+            }
+        }
+
+        Ok(Preview {
+            project_id: self.project.id,
+            proposal: Proposal::new(actor, rationale, Vec::new()),
+            changes,
+            references,
+            diagnostics,
+            reverts: Some(entry.transaction_id),
+        })
+    }
+
+    /// Rebuilds a snapshot by applying a change log to the project it started
+    /// from.
+    ///
+    /// Every entry is checked as it is applied: it must belong to the project,
+    /// follow the previous sequence without gaps, and pass the same version,
+    /// reference, and dependent checks as a commit. A log that replays
+    /// cleanly reproduces the committed state, versions, and head exactly.
+    pub fn replay(genesis: Project, entries: &[LogEntry]) -> Result<Self, ReplayError> {
+        let mut snapshot = Self::genesis(genesis);
+        for entry in entries {
+            if entry.project_id != snapshot.project.id {
+                return Err(ReplayError::WrongProject {
+                    sequence: entry.sequence,
+                    entry: entry.project_id,
+                    genesis: snapshot.project.id,
+                });
+            }
+            let expected = LogSequence(snapshot.head.0 + 1);
+            if entry.sequence != expected {
+                return Err(ReplayError::OutOfOrder {
+                    expected,
+                    found: entry.sequence,
+                });
+            }
+            let conflicts = snapshot.conflicts(&entry.changes, &references_of(&entry.changes));
+            if !conflicts.is_empty() {
+                return Err(ReplayError::Inconsistent {
+                    sequence: entry.sequence,
+                    objects: conflicts,
+                });
+            }
+            snapshot.write(&entry.changes);
+        }
+        Ok(snapshot)
+    }
+
+    /// Every reason a change set cannot be applied to the current state, in
+    /// deterministic order. Empty means the change set applies cleanly.
+    fn conflicts(&self, changes: &[ObjectChange], references: &[ObjectRef]) -> Vec<ObjectRef> {
         let mut conflicts: BTreeSet<ObjectRef> = BTreeSet::new();
-        for change in &preview.changes {
-            let current = self.records.get(&change.object);
-            let unchanged = match (change.base_version, current) {
+        for change in changes {
+            // `before: None` with a base version restores a tombstone; with no
+            // base version it creates an object that must never have existed.
+            let unchanged = match (change.base_version, self.records.get(&change.object)) {
                 (None, None) => true,
-                (Some(base), Some(record)) => !record.deleted && record.version == base,
+                (Some(base), Some(record)) => {
+                    record.version == base && record.deleted == change.before.is_none()
+                }
                 _ => false,
             };
             if !unchanged {
                 conflicts.insert(change.object);
             }
         }
-        for object in &preview.references {
+        for object in references {
             if self.version(*object).is_none() {
                 conflicts.insert(*object);
             }
@@ -469,8 +618,7 @@ impl ProjectSnapshot {
         // A dependent committed after the preview (for example, a new link to
         // a wall this transaction deletes) does not change the deleted
         // object's version, so check deletions against the current state.
-        let deleted: BTreeSet<ObjectRef> = preview
-            .changes
+        let deleted: BTreeSet<ObjectRef> = changes
             .iter()
             .filter(|change| change.after.is_none())
             .map(|change| change.object)
@@ -482,13 +630,12 @@ impl ProjectSnapshot {
                     .filter(|dependent| !deleted.contains(dependent)),
             );
         }
-        if !conflicts.is_empty() {
-            return Err(CommitError::Conflict {
-                objects: conflicts.into_iter().collect(),
-            });
-        }
+        conflicts.into_iter().collect()
+    }
 
-        for change in &preview.changes {
+    /// Writes a checked change set and advances the head by one.
+    fn write(&mut self, changes: &[ObjectChange]) {
+        for change in changes {
             apply_change(&mut self.project, change);
             let record = self.records.entry(change.object).or_insert(ObjectRecord {
                 version: ObjectVersion(0),
@@ -498,29 +645,79 @@ impl ProjectSnapshot {
             record.deleted = change.after.is_none();
         }
         self.head = LogSequence(self.head.0 + 1);
-
-        let domains: BTreeSet<Domain> = preview
-            .changes
-            .iter()
-            .map(|change| change.object.domain())
-            .collect();
-        let Proposal {
-            id,
-            actor,
-            rationale,
-            operations,
-        } = preview.proposal;
-
-        Ok(LogEntry {
-            sequence: self.head,
-            transaction_id: id,
-            actor,
-            rationale,
-            operations,
-            changes: preview.changes,
-            domains: domains.into_iter().collect(),
-        })
     }
+}
+
+fn domains_of(changes: &[ObjectChange]) -> Vec<Domain> {
+    let domains: BTreeSet<Domain> = changes
+        .iter()
+        .map(|change| change.object.domain())
+        .collect();
+    domains.into_iter().collect()
+}
+
+/// Objects referenced by the resulting states of a change set, excluding
+/// objects the change set itself changes.
+fn references_of(changes: &[ObjectChange]) -> Vec<ObjectRef> {
+    let changed: BTreeSet<ObjectRef> = changes.iter().map(|change| change.object).collect();
+    let referenced: BTreeSet<ObjectRef> = changes
+        .iter()
+        .filter_map(|change| change.after.as_ref())
+        .flat_map(|state| match state {
+            ObjectState::Project { .. } | ObjectState::Level(_) | ObjectState::Activity(_) => {
+                Vec::new()
+            }
+            ObjectState::Wall(wall) => vec![ObjectRef::Level(wall.level_id)],
+            ObjectState::Relationship(relationship) => vec![
+                ObjectRef::Activity(relationship.predecessor_id),
+                ObjectRef::Activity(relationship.successor_id),
+            ],
+            ObjectState::Link(link) => vec![
+                ObjectRef::Wall(link.element_id),
+                ObjectRef::Activity(link.activity_id),
+            ],
+        })
+        .collect();
+    referenced
+        .into_iter()
+        .filter(|object| !changed.contains(object))
+        .collect()
+}
+
+#[derive(Debug, Error, PartialEq, Eq)]
+pub enum UndoError {
+    #[error("log entry belongs to project {entry}, not {snapshot}")]
+    WrongProject {
+        entry: ProjectId,
+        snapshot: ProjectId,
+    },
+    #[error("log sequence {} has not been committed to this snapshot", .0.0)]
+    NotCommitted(LogSequence),
+    #[error("{} object(s) changed since the entry and block its undo", .objects.len())]
+    Conflict {
+        /// Conflicting objects in deterministic order.
+        objects: Vec<ObjectRef>,
+    },
+}
+
+#[derive(Debug, Error, PartialEq, Eq)]
+pub enum ReplayError {
+    #[error("log entry {} belongs to project {entry}, not {genesis}", .sequence.0)]
+    WrongProject {
+        sequence: LogSequence,
+        entry: ProjectId,
+        genesis: ProjectId,
+    },
+    #[error("expected log sequence {}, found {}", .expected.0, .found.0)]
+    OutOfOrder {
+        expected: LogSequence,
+        found: LogSequence,
+    },
+    #[error("log entry {} does not apply cleanly to {} object(s)", .sequence.0, .objects.len())]
+    Inconsistent {
+        sequence: LogSequence,
+        objects: Vec<ObjectRef>,
+    },
 }
 
 /// A proposal that failed validation. Nothing was applied.
