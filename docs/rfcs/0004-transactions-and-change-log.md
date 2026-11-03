@@ -1,8 +1,9 @@
 # RFC 0004: Transactions, Object Versions, and the Change Log
 
-- Status: Proposed
+- Status: Accepted
 - Authors: Jonathan McMichael (drafted with AI assistance)
 - Created: 2026-11-03
+- Accepted: 2026-11-03 by the bootstrap maintainer, with the reviewer decisions in PR #46 (no implicit cascades, reference survival, cycles as diagnostics, one log per project, no CRDTs) accepted as written
 - Related: RFC 0001 (unresolved question: "smallest deterministic transaction and dependency model"); RFC 0003 (units and tolerances, #12); calendars RFC (#18)
 
 ## Summary
